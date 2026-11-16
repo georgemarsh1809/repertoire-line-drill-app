@@ -1,0 +1,29 @@
+[Event "S1 Staunton: 4.Bg5 Nc6 5.d5 Ne5 6.Qd4 Nf7"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. Bg5 Nc6 5. d5 Ne5 6. Qd4 Nf7 { Main line per Wikipedia. 6.Qe2 is the modern alternative. Check Lichess explorer for White's other 5th moves (f3, Nge2, Qd2) and add your answers. } *
+
+[Event "S2 Staunton: 5.Bxf6 exf6 6.Nxe4 Qe7"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. Bg5 Nc6 5. Bxf6 exf6 6. Nxe4 Qe7 7. Qe2 Nxd4 8. Qd3 d5 9. Qxd4 Qxe4+ 10. Qxe4 dxe4 { Per Wikipedia: White has no good way to defend the knight except 7.Qe2; other 7th moves allow ...d5 or ...f5. } *
+
+[Event "S3 Staunton: 4.f3 d5 5.fxe4 dxe4"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. f3 d5 5. fxe4 dxe4 { Generally recommended over 4...exf3, which gives White Blackmar-Diemer style compensation. } *
+
+[Event "S4 Staunton: 4.g4 h6"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. g4 h6 { Bayonet attack. Wikipedia: White lacks enough compensation. } *
+
+[Event "S5 AVOID: 4...d5? trap"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. Bg5 d5 5. Bxf6 exf6 6. Qh5+ g6 7. Qxd5 Qxd5 8. Nxd5 { White regains the pawn and wins another. Do not play 4...d5. Database also scores 4...e6 and 4...c6 poorly for Black. } *

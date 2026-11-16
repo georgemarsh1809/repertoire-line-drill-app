@@ -1,0 +1,77 @@
+[Event "W1 Vienna: 2...Nf6"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 e5 2. Nc3 Nf6 { DECIDE: 3.f4 (Vienna Gambit) or a quieter 3rd move. Write your one move and the plan. } *
+
+[Event "W2 Vienna: 2...Nc6"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 e5 2. Nc3 Nc6 { Your move + plan. } *
+
+[Event "W3 Vienna: 2...Bc5 and other 2nd moves"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 e5 2. Nc3 Bc5 { Also cover 2...d6, 2...Bb4, 2...f5, 2...d5 etc. } *
+
+[Event "W4 Grand Prix: 2...Nc6"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 c5 2. Nc3 Nc6 3. f4 g6 4. Nf3 Bg7 { Your setup/plan. Also 3...e6, 3...d6. } *
+
+[Event "W5 Grand Prix: 2...e6 and 2...d6"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 c5 2. Nc3 e6 3. f4 { Add 2...d6 as a separate branch. } *
+
+[Event "W6 Anti-Grand-Prix: 2...d5, 2...Nf6, 2...g6, 2...a6"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 c5 2. Nc3 { Check the explorer for how Black avoids the Grand Prix and decide your answer. } *
+
+[Event "W7 Pirc/Modern: 150 Attack setup"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 d6 2. d4 Nf6 3. Nc3 g6 4. Be3 Bg7 5. Qd2 { Your plan: f3, O-O-O, g4. Cover Black's counters: ...c6/...b5, ...O-O, ...Nc6, ...c5, ...e5. } *
+
+[Event "W8 KID-style Samisch (only if you play 1.d4)"]
+[Orientation "white"]
+[Result "*"]
+
+1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. f3 O-O 6. Be3 { Delete this chapter if you only play 1.e4. } *
+
+[Event "W9 GAP: 1...e6 (French)"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 e6 { TODO: choose one simple system. } *
+
+[Event "W10 GAP: 1...d5 (Scandinavian)"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 d5 { TODO: choose one simple system. } *
+
+[Event "W11 GAP: 1...Nf6 (Alekhine)"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 Nf6 { TODO: choose one simple system. } *
+
+[Event "W12 GAP: 1...c6 (Caro-Kann)"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 c6 { TODO: choose one simple system. } *
+
+[Event "W13 GAP: 1...Nc6, 1...a6, other rare replies"]
+[Orientation "white"]
+[Result "*"]
+
+1. e4 Nc6 { TODO: short answer for each. } *

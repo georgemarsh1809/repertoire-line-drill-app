@@ -1,0 +1,101 @@
+[Event "B1 Caro-Kann: Main line 3.Nc3"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 { Levy course: add your chosen setups. } *
+
+[Event "B2 Caro-Kann: Advance 3.e5"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. d4 d5 3. e5 { Levy course. } *
+
+[Event "B3 Caro-Kann: Exchange 3.exd5"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. d4 d5 3. exd5 cxd5 { Levy course. } *
+
+[Event "B4 Caro-Kann: Panov 4.c4"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. d4 d5 3. exd5 cxd5 4. c4 Nf6 5. Nc3 { Levy course. } *
+
+[Event "B5 Caro-Kann: Two Knights 2.Nc3"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. Nc3 d5 3. Nf3 { Levy course. } *
+
+[Event "B6 Caro-Kann: Fantasy 3.f3 and sidelines"]
+[Orientation "black"]
+[Result "*"]
+
+1. e4 c6 2. d4 d5 3. f3 { Also 2.d3, 2.Nf3, 2.c4. } *
+
+[Event "B7 Dutch: 2.Nf3 Nf6 3.g3"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. Nf3 Nf6 3. g3 { Levy course: your setup. } *
+
+[Event "B8 Dutch: 2.Bg5 (Hopton) and 2.Nc3"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. Bg5 { PRIORITY: needs a decided answer. Also 2.Nc3 Nf6 3.Bg5. } *
+
+[Event "B9 Dutch: 2.e4 (Staunton Gambit)"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. Bg5 { PRIORITY: needs a decided answer. } *
+
+[Event "B10 Dutch: 2.c4 and 2.g3"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. c4 Nf6 3. Nc3 { Also 2.g3, 2.h3. } *
+
+[Event "B11 Dutch: 2.Nf3 Nf6 3.Bf4 (London)"]
+[Orientation "black"]
+[Result "*"]
+
+1. d4 f5 2. Nf3 Nf6 3. Bf4 { Your setup. } *
+
+[Event "B12 1.Nf3 Nf6 2.g3 (reverse London setup)"]
+[Orientation "black"]
+[Result "*"]
+
+1. Nf3 Nf6 2. g3 d5 3. Bg2 { Your reverse London setup and plans. } *
+
+[Event "B13 1.Nf3 Nf6 2.c4 (GAP)"]
+[Orientation "black"]
+[Result "*"]
+
+1. Nf3 Nf6 2. c4 { TODO: decide what you play here. } *
+
+[Event "B14 1.Nf3 Nf6 2.d4 (GAP: ...d5 or Dutch ...f5?)"]
+[Orientation "black"]
+[Result "*"]
+
+1. Nf3 Nf6 2. d4 { TODO: decide, so you do not improvise. } *
+
+[Event "B15 English: 1.c4 e5 2.Nc3 Nf6 3.Nf3 Nc6 4.g3 Bb4"]
+[Orientation "black"]
+[Result "*"]
+
+1. c4 e5 2. Nc3 Nf6 3. Nf3 Nc6 4. g3 Bb4 { Study: your Bxc3 plans. } *
+
+[Event "B16 English: 2.Nc3 Bb4 and other 2nd/3rd moves"]
+[Orientation "black"]
+[Result "*"]
+
+1. c4 e5 2. Nc3 Bb4 { Also 2.g3, 2.Nf3, 3.g3. } *
+
+[Event "B17 Rare first moves: 1.b3, 1.f4, 1.g3, 1.Nc3, 1.e3"]
+[Orientation "black"]
+[Result "*"]
+
+1. b3 { TODO: one short answer each. } *

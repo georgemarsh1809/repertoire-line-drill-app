@@ -1,0 +1,13 @@
+{
+  "name": "repertoire-line-drill",
+  "version": "1.0.0",
+  "description": "Drill every line of a Lichess study over the board: the person at the screen plays the opponent, you answer from memory.",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node tests/walker.test.js"
+  },
+  "devDependencies": {
+    "chess.js": "0.10.3"
+  }
+}
