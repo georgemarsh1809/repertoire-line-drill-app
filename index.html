@@ -1,2406 +1,835 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Repertoire Line Drill</title>
-        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-        <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
-            rel="stylesheet"
-        />
-        <style>
-            /* Layout: the board on the left, a large move prompt on the right. The person at the screen plays the opponent. */
-            :root {
-                --bg: #eef1f3;
-                --panel: #ffffff;
-                --ink: #17232b;
-                --muted: #566872;
-                --accent: #1f6f8b;
-                --on-accent: #ffffff;
-                --line: #d3dbe0;
-                --sq-light: #e4ebee;
-                --sq-dark: #6f90a2;
-                --opp: #d9640f;
-                --me: #1c8556;
-                --bad: #b8332a;
-                --hl: rgba(255, 210, 40, 0.5);
-                --pw: #fdfdfb;
-                --pw-stroke: #14212a;
-                --pb: #1a2832;
-                --pb-stroke: #f4f6f7;
-                --font-body:
-                    'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI',
-                    sans-serif;
-                --font-mono:
-                    'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root:not([data-theme='light']) {
-                    --bg: #0e161b;
-                    --panel: #16222a;
-                    --ink: #e7eff3;
-                    --muted: #94a7b1;
-                    --accent: #5ab4d3;
-                    --on-accent: #0b1318;
-                    --line: #2a3b45;
-                    --sq-light: #9bb1bc;
-                    --sq-dark: #3d5867;
-                    --opp: #f08a3c;
-                    --me: #3cc283;
-                    --bad: #ef6a5a;
-                    --hl: rgba(255, 210, 40, 0.38);
-                    --pw: #fdfdfb;
-                    --pw-stroke: #0e161b;
-                    --pb: #121b21;
-                    --pb-stroke: #e9f0f3;
-                    color-scheme: dark;
-                }
-            }
-            :root[data-theme='dark'] {
-                --bg: #0e161b;
-                --panel: #16222a;
-                --ink: #e7eff3;
-                --muted: #94a7b1;
-                --accent: #5ab4d3;
-                --on-accent: #0b1318;
-                --line: #2a3b45;
-                --sq-light: #9bb1bc;
-                --sq-dark: #3d5867;
-                --opp: #f08a3c;
-                --me: #3cc283;
-                --bad: #ef6a5a;
-                --hl: rgba(255, 210, 40, 0.38);
-                --pw: #fdfdfb;
-                --pw-stroke: #0e161b;
-                --pb: #121b21;
-                --pb-stroke: #e9f0f3;
-                color-scheme: dark;
-            }
-            * {
-                box-sizing: border-box;
-            }
-            html,
-            body {
-                margin: 0;
-            }
-            body {
-                background: var(--bg);
-                color: var(--ink);
-                font: 16px/1.5 var(--font-body);
-            }
-            header {
-                max-width: 1120px;
-                margin: 0 auto;
-                padding: 22px 16px 0;
-            }
-            h1 {
-                margin: 0;
-                font-size: 1.5rem;
-                font-weight: 600;
-                letter-spacing: -0.01em;
-                text-wrap: balance;
-            }
-            .sub {
-                margin: 4px 0 0;
-                color: var(--muted);
-                max-width: 68ch;
-            }
-            .layout {
-                display: grid;
-                grid-template-columns: minmax(0, 640px) minmax(300px, 1fr);
-                gap: 24px;
-                max-width: 1120px;
-                margin: 0 auto;
-                padding: 18px 16px 48px;
-                align-items: start;
-            }
-            @media (max-width: 860px) {
-                .layout {
-                    grid-template-columns: 1fr;
-                }
-            }
-            .board-wrap {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            #board {
-                width: 100%;
-                height: auto;
-                display: block;
-                border-radius: 6px;
-                box-shadow:
-                    0 1px 0 var(--line),
-                    0 6px 20px rgba(0, 0, 0, 0.08);
-            }
-            #moves {
-                font-family: var(--font-mono);
-                font-size: 0.9rem;
-                color: var(--muted);
-                min-height: 2.8em;
-                overflow-wrap: anywhere;
-            }
-            .card {
-                background: var(--panel);
-                border: 1px solid var(--line);
-                border-radius: 10px;
-                padding: 16px 18px;
-            }
-            .side {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            #kicker {
-                font-size: 0.78rem;
-                font-weight: 600;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-                color: var(--muted);
-            }
-            #kicker.opp {
-                color: var(--opp);
-            }
-            #kicker.me {
-                color: var(--me);
-            }
-            #big {
-                font-family: var(--font-mono);
-                font-weight: 600;
-                font-size: clamp(2.2rem, 6vw, 3.6rem);
-                line-height: 1.1;
-                margin: 6px 0 2px;
-                overflow-wrap: anywhere;
-                font-variant-numeric: tabular-nums;
-            }
-            #detail {
-                color: var(--muted);
-                min-height: 1.5em;
-            }
-            #comment {
-                margin-top: 10px;
-                padding: 8px 12px;
-                border-left: 3px solid var(--line);
-                color: var(--ink);
-                display: none;
-            }
-            #banner {
-                margin-top: 12px;
-                padding: 8px 12px;
-                border-radius: 8px;
-                background: color-mix(in srgb, var(--accent) 14%, transparent);
-                border: 1px solid
-                    color-mix(in srgb, var(--accent) 40%, transparent);
-                display: none;
-            }
-            #progress {
-                margin-top: 14px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px 16px;
-                color: var(--muted);
-                font-size: 0.9rem;
-                font-variant-numeric: tabular-nums;
-            }
-            .bar {
-                height: 6px;
-                border-radius: 3px;
-                background: var(--line);
-                margin-top: 8px;
-                overflow: hidden;
-            }
-            .bar > i {
-                display: block;
-                height: 100%;
-                background: var(--accent);
-                width: 0;
-            }
-            .row {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                margin-top: 14px;
-            }
-            button,
-            select,
-            textarea,
-            input[type='file'] {
-                font: inherit;
-                color: inherit;
-            }
-            .btn {
-                appearance: none;
-                border: 1px solid var(--line);
-                background: var(--panel);
-                color: var(--ink);
-                border-radius: 8px;
-                padding: 9px 14px;
-                cursor: pointer;
-                min-height: 42px;
-            }
-            .btn:hover:not(:disabled) {
-                border-color: var(--accent);
-            }
-            .btn:disabled {
-                opacity: 0.45;
-                cursor: default;
-            }
-            .btn.primary {
-                background: var(--accent);
-                color: var(--on-accent);
-                border-color: var(--accent);
-                font-weight: 600;
-                flex: 1 1 140px;
-            }
-            .btn.bad {
-                color: var(--bad);
-                border-color: color-mix(in srgb, var(--bad) 55%, var(--line));
-            }
-            .btn kbd {
-                font-family: var(--font-mono);
-                font-size: 0.75rem;
-                opacity: 0.7;
-                margin-left: 6px;
-            }
-            :focus-visible {
-                outline: 3px solid var(--accent);
-                outline-offset: 2px;
-            }
-            details.card > summary {
-                cursor: pointer;
-                font-weight: 600;
-            }
-            .field {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-                margin-top: 14px;
-            }
-            .field > label,
-            .legend {
-                font-size: 0.85rem;
-                color: var(--muted);
-            }
-            textarea {
-                width: 100%;
-                min-height: 120px;
-                resize: vertical;
-                padding: 10px;
-                border: 1px solid var(--line);
-                border-radius: 8px;
-                background: var(--bg);
-                font-family: var(--font-mono);
-                font-size: 0.8rem;
-            }
-            select {
-                padding: 8px 10px;
-                border: 1px solid var(--line);
-                border-radius: 8px;
-                background: var(--panel);
-                min-height: 40px;
-            }
-            #chapters {
-                max-height: 230px;
-                overflow: auto;
-                border: 1px solid var(--line);
-                border-radius: 8px;
-            }
-            .chap {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px 10px;
-                align-items: center;
-                padding: 8px 12px;
-                border-bottom: 1px solid var(--line);
-                cursor: pointer;
-            }
-            .chap:last-child {
-                border-bottom: 0;
-            }
-            .chap .n {
-                margin-left: auto;
-                color: var(--muted);
-                font-size: 0.85rem;
-                font-variant-numeric: tabular-nums;
-                white-space: nowrap;
-            }
-            .chap .t {
-                overflow-wrap: anywhere;
-            }
-            .opts {
-                display: grid;
-                gap: 10px;
-                margin-top: 14px;
-            }
-            .opts label {
-                display: flex;
-                gap: 10px;
-                align-items: flex-start;
-            }
-            .opts small {
-                color: var(--muted);
-                display: block;
-            }
-            .pb {
-                flex-basis: 100%;
-                height: 5px;
-                border-radius: 3px;
-                background: var(--line);
-                overflow: hidden;
-                display: flex;
-            }
-            .pb i {
-                display: block;
-                height: 100%;
-            }
-            .pb .ok {
-                background: var(--me);
-            }
-            .pb .no {
-                background: var(--bad);
-            }
-            .chap .n b {
-                color: var(--ink);
-                font-weight: 600;
-            }
-            #overall {
-                color: var(--muted);
-                font-size: 0.9rem;
-                margin-top: 6px;
-                font-variant-numeric: tabular-nums;
-            }
-            details.inner {
-                margin-top: 18px;
-                border-top: 1px solid var(--line);
-                padding-top: 12px;
-            }
-            details.inner > summary {
-                cursor: pointer;
-                font-weight: 600;
-            }
-            input[type='text'] {
-                width: 100%;
-                padding: 9px 10px;
-                border: 1px solid var(--line);
-                border-radius: 8px;
-                background: var(--bg);
-                min-height: 40px;
-                font: inherit;
-                color: inherit;
-            }
-            a.lnk {
-                color: var(--accent);
-                font-weight: 600;
-            }
-            ol.steps {
-                margin: 6px 0 0;
-                padding-left: 20px;
-                color: var(--muted);
-                font-size: 0.88rem;
-            }
-            #storeNote {
-                color: var(--bad);
-                font-size: 0.85rem;
-                margin-top: 8px;
-                display: none;
-            }
-            .vlabel {
-                align-items: baseline;
-                display: flex;
-                justify-content: space-between;
-                gap: 12px;
-                font-size: 0.82rem;
-                color: var(--muted);
-                margin-bottom: 6px;
-                font-variant-numeric: tabular-nums;
-            }
-            .vlabel b {
-                color: var(--ink);
-                font-weight: 600;
-            }
-            .chapgrid {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 5px;
-                flex: 1 1 auto;
-                min-width: 0;
-                justify-content: center;
-            }
-            .chapgrid button {
-                width: 28px;
-                height: 28px;
-                border-radius: 6px;
-                background: var(--bg);
-                color: var(--muted);
-                border: 1px solid var(--line);
-                padding: 0;
-                cursor: pointer;
-                font: 600 0.78rem var(--font-mono);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .chapgrid button:hover {
-                border-color: var(--accent);
-                color: var(--ink);
-            }
-            .chapgrid button.ok {
-                background: var(--me);
-                border-color: var(--me);
-                color: #fff;
-                font-size: 0;
-            }
-            .chapgrid button.ok::after {
-                content: '\2713';
-                font-size: 14px;
-                font-weight: 700;
-            }
-            .chapgrid button.no {
-                background: var(--bad);
-                border-color: var(--bad);
-                color: #fff;
-            }
-            .chapgrid button.cur {
-                outline: 2px solid var(--ink);
-                outline-offset: 2px;
-            }
-            .actions {
-                display: flex;
-                gap: 8px;
-                margin-top: 14px;
-            }
-            .actions .primary {
-                flex: 1 1 auto;
-                min-height: 50px;
-                font-size: 1.05rem;
-            }
-            .sec {
-                margin-top: 18px;
-                padding-top: 14px;
-                border-top: 1px solid var(--line);
-            }
-            .navrow {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
-            .navrow select {
-                flex: 1 1 auto;
-                min-width: 0;
-            }
-            .btn.sm {
-                min-height: 36px;
-                min-width: 40px;
-                padding: 2px 12px;
-                font-size: 1.25rem;
-                line-height: 1;
-                flex: 0 0 auto;
-            }
-            .tools {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                margin-top: 16px;
-            }
-            .btn.ghost {
-                background: transparent;
-                color: var(--muted);
-                min-height: 36px;
-                padding: 6px 12px;
-                font-size: 0.9rem;
-                text-decoration: none;
-                display: inline-flex;
-                align-items: center;
-            }
-            .btn.ghost:hover {
-                color: var(--ink);
-            }
-            .help kbd {
-                font-family: var(--font-mono);
-                font-size: 0.72rem;
-                border: 1px solid var(--line);
-                border-radius: 4px;
-                padding: 0 5px;
-                background: var(--bg);
-            }
-            .linebar {
-                display: flex;
-                gap: 2px;
-            }
-            .linebar i {
-                flex: 1 1 0;
-                min-width: 3px;
-                height: 14px;
-                border-radius: 2px;
-                background: var(--line);
-                display: block;
-            }
-            .linebar i.done {
-                background: var(--me);
-                color: #fff;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                line-height: 1;
-                overflow: hidden;
-            }
-            .linebar i.done::after {
-                content: '\2713';
-                font-size: 9px;
-                font-weight: 700;
-            }
-            .linebar i.done.miss {
-                background: var(--bad);
-            }
-            .linebar i.done.miss::after {
-                content: '\2717';
-            }
-            .linebar i.cur {
-                outline: 2px solid var(--ink);
-                outline-offset: 1px;
-            }
-            #loadmsg {
-                margin-top: 8px;
-                font-size: 0.9rem;
-                color: var(--muted);
-            }
-            #loadmsg.err {
-                color: var(--bad);
-            }
-            #warnings {
-                margin: 8px 0 0;
-                padding-left: 18px;
-                color: var(--bad);
-                font-size: 0.85rem;
-            }
-            .help {
-                color: var(--muted);
-                font-size: 0.88rem;
-                margin: 10px 0 0;
-            }
-            @media (prefers-reduced-motion: no-preference) {
-                .bar > i {
-                    transition: width 0.2s ease;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <svg
-            width="0"
-            height="0"
-            style="position: absolute"
-            aria-hidden="true"
-            focusable="false"
-        >
-            <defs>
-                <symbol id="p-wK" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            stroke-linejoin="miter"
-                            d="M22.5 11.63V6M20 8h5"
-                        />
-                        <path
-                            fill="#fff"
-                            stroke-linecap="butt"
-                            stroke-linejoin="miter"
-                            d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"
-                        />
-                        <path
-                            fill="#fff"
-                            d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10z"
-                        />
-                        <path
-                            d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-wQ" viewBox="0 0 45 45">
-                    <g
-                        fill="#fff"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            d="M8 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0m16.5-4.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0M41 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0M16 8.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0M33 9a2 2 0 1 1-4 0 2 2 0 1 1 4 0"
-                        />
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14z"
-                        />
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"
-                        />
-                        <path
-                            fill="none"
-                            d="M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-wR" viewBox="0 0 45 45">
-                    <g
-                        fill="#fff"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 39h27v-3H9zm3-3v-4h21v4zm-1-22V9h4v2h5V9h5v2h5V9h4v5"
-                        />
-                        <path d="m34 14-3 3H14l-3-3" />
-                        <path
-                            stroke-linecap="butt"
-                            stroke-linejoin="miter"
-                            d="M31 17v12.5H14V17"
-                        />
-                        <path d="m31 29.5 1.5 2.5h-20l1.5-2.5" />
-                        <path
-                            fill="none"
-                            stroke-linejoin="miter"
-                            d="M11 14h23"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-wB" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <g fill="#fff" stroke-linecap="butt">
-                            <path
-                                d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.94 3-2 3-2z"
-                            />
-                            <path
-                                d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"
-                            />
-                            <path
-                                d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"
-                            />
-                        </g>
-                        <path
-                            stroke-linejoin="miter"
-                            d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-wN" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            fill="#fff"
-                            d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"
-                        />
-                        <path
-                            fill="#fff"
-                            d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3"
-                        />
-                        <path
-                            fill="#000"
-                            d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0m5.433-9.75a.5 1.5 30 1 1-.866-.5.5 1.5 30 1 1 .866.5"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-wP" viewBox="0 0 45 45">
-                    <path
-                        fill="#fff"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-width="1.5"
-                        d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z"
-                    />
-                </symbol>
-                <symbol id="p-bK" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path stroke-linejoin="miter" d="M22.5 11.6V6" />
-                        <path
-                            fill="#000"
-                            stroke-linecap="butt"
-                            stroke-linejoin="miter"
-                            d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"
-                        />
-                        <path
-                            fill="#000"
-                            d="M11.5 37a22.3 22.3 0 0 0 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10z"
-                        />
-                        <path stroke-linejoin="miter" d="M20 8h5" />
-                        <path
-                            stroke="#ececec"
-                            d="M32 29.5s8.5-4 6-9.7C34.1 14 25 18 22.5 24.6v2.1-2.1C20 18 9.9 14 7 19.9c-2.5 5.6 4.8 9 4.8 9"
-                        />
-                        <path
-                            stroke="#ececec"
-                            d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-bQ" viewBox="0 0 45 45">
-                    <g
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <g stroke="none">
-                            <circle cx="6" cy="12" r="2.75" />
-                            <circle cx="14" cy="9" r="2.75" />
-                            <circle cx="22.5" cy="8" r="2.75" />
-                            <circle cx="31" cy="9" r="2.75" />
-                            <circle cx="39" cy="12" r="2.75" />
-                        </g>
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5z"
-                        />
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"
-                        />
-                        <path
-                            fill="none"
-                            stroke-linecap="butt"
-                            d="M11 38.5a35 35 1 0 0 23 0"
-                        />
-                        <path
-                            fill="none"
-                            stroke="#ececec"
-                            d="M11 29a35 35 1 0 1 23 0m-21.5 2.5h20m-21 3a35 35 1 0 0 22 0m-23 3a35 35 1 0 0 24 0"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-bR" viewBox="0 0 45 45">
-                    <g
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            stroke-linecap="butt"
-                            d="M9 39h27v-3H9zm3.5-7 1.5-2.5h17l1.5 2.5zm-.5 4v-4h21v4z"
-                        />
-                        <path
-                            stroke-linecap="butt"
-                            stroke-linejoin="miter"
-                            d="M14 29.5v-13h17v13z"
-                        />
-                        <path
-                            stroke-linecap="butt"
-                            d="M14 16.5 11 14h23l-3 2.5zM11 14V9h4v2h5V9h5v2h5V9h4v5z"
-                        />
-                        <path
-                            fill="none"
-                            stroke="#ececec"
-                            stroke-linejoin="miter"
-                            stroke-width="1"
-                            d="M12 35.5h21m-20-4h19m-18-2h17m-17-13h17M11 14h23"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-bB" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <g fill="#000" stroke-linecap="butt">
-                            <path
-                                d="M9 36c3.4-1 10.1.4 13.5-2 3.4 2.4 10.1 1 13.5 2 0 0 1.6.5 3 2-.7 1-1.6 1-3 .5-3.4-1-10.1.5-13.5-1-3.4 1.5-10.1 0-13.5 1-1.4.5-2.3.5-3-.5 1.4-2 3-2 3-2z"
-                            />
-                            <path
-                                d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"
-                            />
-                            <path
-                                d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"
-                            />
-                        </g>
-                        <path
-                            stroke="#ececec"
-                            stroke-linejoin="miter"
-                            d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-bN" viewBox="0 0 45 45">
-                    <g
-                        fill="none"
-                        fill-rule="evenodd"
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                    >
-                        <path
-                            fill="#000"
-                            d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"
-                        />
-                        <path
-                            fill="#000"
-                            d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.04-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-1-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-2 2.5-3c1 0 1 3 1 3"
-                        />
-                        <path
-                            fill="#ececec"
-                            stroke="#ececec"
-                            d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0m5.43-9.75a.5 1.5 30 1 1-.86-.5.5 1.5 30 1 1 .86.5"
-                        />
-                        <path
-                            fill="#ececec"
-                            stroke="none"
-                            d="m24.55 10.4-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34s-5.79-6.64-9.19-7.16z"
-                        />
-                    </g>
-                </symbol>
-                <symbol id="p-bP" viewBox="0 0 45 45">
-                    <path
-                        stroke="#000"
-                        stroke-linecap="round"
-                        stroke-width="1.5"
-                        d="M22.5 9a4 4 0 0 0-3.22 6.38 6.48 6.48 0 0 0-.87 10.65c-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47a6.46 6.46 0 0 0-.87-10.65A4.01 4.01 0 0 0 22.5 9z"
-                    />
-                </symbol>
-            </defs>
-        </svg>
-        <header>
-            <h1>Repertoire Line Drill</h1>
-            <p class="sub">
-                Load a Lichess study or PGN. Whoever sits at the screen plays
-                the opponent from the arrows and checks your replies. You play
-                the repertoire from memory on a real board.
-            </p>
-        </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repertoire Line Drill</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: the board on the left, a large move prompt on the right. The person at the screen plays the opponent. */
+:root {
+  --bg: #eef1f3; --panel: #ffffff; --ink: #17232b; --muted: #566872; --accent: #1f6f8b; --on-accent: #ffffff;
+  --line: #d3dbe0; --sq-light: #e4ebee; --sq-dark: #6f90a2;
+  --opp: #d9640f; --me: #1c8556; --bad: #b8332a; --hl: rgba(255, 210, 40, 0.5);
+  --pw: #fdfdfb; --pw-stroke: #14212a; --pb: #1a2832; --pb-stroke: #f4f6f7;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e161b; --panel: #16222a; --ink: #e7eff3; --muted: #94a7b1; --accent: #5ab4d3; --on-accent: #0b1318;
+    --line: #2a3b45; --sq-light: #9bb1bc; --sq-dark: #3d5867;
+    --opp: #f08a3c; --me: #3cc283; --bad: #ef6a5a; --hl: rgba(255, 210, 40, 0.38);
+    --pw: #fdfdfb; --pw-stroke: #0e161b; --pb: #121b21; --pb-stroke: #e9f0f3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e161b; --panel: #16222a; --ink: #e7eff3; --muted: #94a7b1; --accent: #5ab4d3; --on-accent: #0b1318;
+  --line: #2a3b45; --sq-light: #9bb1bc; --sq-dark: #3d5867;
+  --opp: #f08a3c; --me: #3cc283; --bad: #ef6a5a; --hl: rgba(255, 210, 40, 0.38);
+  --pw: #fdfdfb; --pw-stroke: #0e161b; --pb: #121b21; --pb-stroke: #e9f0f3;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--font-body); }
+header { max-width: 1120px; margin: 0 auto; padding: 22px 16px 0; }
+h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 68ch; }
+.layout { display: grid; grid-template-columns: minmax(0, 640px) minmax(300px, 1fr); gap: 24px; max-width: 1120px; margin: 0 auto; padding: 18px 16px 48px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+.board-wrap { display: flex; flex-direction: column; gap: 10px; }
+#board { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0,0,0,0.08); }
+#moves { font-family: var(--font-mono); font-size: 0.9rem; color: var(--muted); min-height: 2.8em; overflow-wrap: anywhere; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.side { display: flex; flex-direction: column; gap: 16px; }
+#kicker { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#kicker.opp { color: var(--opp); }
+#kicker.me { color: var(--me); }
+#big { font-family: var(--font-mono); font-weight: 600; font-size: clamp(2.2rem, 6vw, 3.6rem); line-height: 1.1; margin: 6px 0 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#detail { color: var(--muted); min-height: 1.5em; }
+#comment { margin-top: 10px; padding: 8px 12px; border-left: 3px solid var(--line); color: var(--ink); display: none; }
+#banner { margin-top: 12px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); display: none; }
+#progress { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 8px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+button, select, textarea, input[type="file"] { font: inherit; color: inherit; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 9px 14px; cursor: pointer; min-height: 42px; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; flex: 1 1 140px; }
+.btn.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); }
+.btn kbd { font-family: var(--font-mono); font-size: 0.75rem; opacity: 0.7; margin-left: 6px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+details.card > summary { cursor: pointer; font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.field > label, .legend { font-size: 0.85rem; color: var(--muted); }
+textarea { width: 100%; min-height: 120px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-family: var(--font-mono); font-size: 0.8rem; }
+select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); min-height: 40px; }
+#chapters { max-height: 230px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.chap { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.chap:last-child { border-bottom: 0; }
+.chap .n { margin-left: auto; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chap .t { overflow-wrap: anywhere; }
+.opts { display: grid; gap: 10px; margin-top: 14px; }
+.opts label { display: flex; gap: 10px; align-items: flex-start; }
+.opts small { color: var(--muted); display: block; }
+.pb { flex-basis: 100%; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; display: flex; }
+.pb i { display: block; height: 100%; }
+.pb .ok { background: var(--me); } .pb .no { background: var(--bad); }
+.chap .n b { color: var(--ink); font-weight: 600; }
+#overall { color: var(--muted); font-size: 0.9rem; margin-top: 6px; font-variant-numeric: tabular-nums; }
+details.inner { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+details.inner > summary { cursor: pointer; font-weight: 600; }
+input[type="text"] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); min-height: 40px; font: inherit; color: inherit; }
+a.lnk { color: var(--accent); font-weight: 600; }
+ol.steps { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 0.88rem; }
+#storeNote { color: var(--bad); font-size: 0.85rem; margin-top: 8px; display: none; }
+.vlabel { align-items: baseline; display: flex; justify-content: space-between; gap: 12px; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.vlabel b { color: var(--ink); font-weight: 600; }
+.chapgrid { display: flex; flex-wrap: wrap; gap: 5px; flex: 1 1 auto; min-width: 0; justify-content: center; }
+.chapgrid button { width: 28px; height: 28px; border-radius: 6px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); padding: 0; cursor: pointer; font: 600 0.78rem var(--font-mono); display: flex; align-items: center; justify-content: center; }
+.chapgrid button:hover { border-color: var(--accent); color: var(--ink); }
+.chapgrid button.ok { background: var(--me); border-color: var(--me); color: #fff; font-size: 0; }
+.chapgrid button.ok::after { content: "\2713"; font-size: 14px; font-weight: 700; }
+.chapgrid button.no { background: var(--bad); border-color: var(--bad); color: #fff; }
+.chapgrid button.cur { outline: 2px solid var(--ink); outline-offset: 2px; }
+.actions { display: flex; gap: 8px; margin-top: 14px; }
+.actions .primary { flex: 1 1 auto; min-height: 50px; font-size: 1.05rem; }
+.sec { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.navrow { display: flex; gap: 8px; align-items: center; }
+.navrow select { flex: 1 1 auto; min-width: 0; }
+.btn.sm { min-height: 36px; min-width: 40px; padding: 2px 12px; font-size: 1.25rem; line-height: 1; flex: 0 0 auto; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn.ghost { background: transparent; color: var(--muted); min-height: 36px; padding: 6px 12px; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; }
+.btn.ghost:hover { color: var(--ink); }
+.help kbd { font-family: var(--font-mono); font-size: 0.72rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--bg); }
+.linebar { display: flex; gap: 2px; }
+.linebar i { flex: 1 1 0; min-width: 3px; height: 14px; border-radius: 2px; background: var(--line); display: block; }
+.linebar i.done { background: var(--me); color: #fff; display: flex; align-items: center; justify-content: center; line-height: 1; overflow: hidden; }
+.linebar i.done::after { content: "\2713"; font-size: 9px; font-weight: 700; }
+.linebar i.done.miss { background: var(--bad); }
+.linebar i.done.miss::after { content: "\2717"; }
+.linebar i.cur { outline: 2px solid var(--ink); outline-offset: 1px; }
+#loadmsg { margin-top: 8px; font-size: 0.9rem; color: var(--muted); }
+#loadmsg.err { color: var(--bad); }
+#warnings { margin: 8px 0 0; padding-left: 18px; color: var(--bad); font-size: 0.85rem; }
+.help { color: var(--muted); font-size: 0.88rem; margin: 10px 0 0; }
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width 0.2s ease; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="p-wK" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linejoin="miter" d="M22.5 11.63V6M20 8h5"/><path fill="#fff" stroke-linecap="butt" stroke-linejoin="miter" d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"/><path fill="#fff" d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10z"/><path d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"/></g></symbol><symbol id="p-wQ" viewBox="0 0 45 45"><g fill="#fff" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M8 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0m16.5-4.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0M41 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0M16 8.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0M33 9a2 2 0 1 1-4 0 2 2 0 1 1 4 0"/><path stroke-linecap="butt" d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14z"/><path stroke-linecap="butt" d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path fill="none" d="M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0"/></g></symbol><symbol id="p-wR" viewBox="0 0 45 45"><g fill="#fff" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linecap="butt" d="M9 39h27v-3H9zm3-3v-4h21v4zm-1-22V9h4v2h5V9h5v2h5V9h4v5"/><path d="m34 14-3 3H14l-3-3"/><path stroke-linecap="butt" stroke-linejoin="miter" d="M31 17v12.5H14V17"/><path d="m31 29.5 1.5 2.5h-20l1.5-2.5"/><path fill="none" stroke-linejoin="miter" d="M11 14h23"/></g></symbol><symbol id="p-wB" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><g fill="#fff" stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path stroke-linejoin="miter" d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5"/></g></symbol><symbol id="p-wN" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path fill="#fff" d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"/><path fill="#fff" d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3"/><path fill="#000" d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0m5.433-9.75a.5 1.5 30 1 1-.866-.5.5 1.5 30 1 1 .866.5"/></g></symbol><symbol id="p-wP" viewBox="0 0 45 45"><path fill="#fff" stroke="#000" stroke-linecap="round" stroke-width="1.5" d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z"/></symbol><symbol id="p-bK" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linejoin="miter" d="M22.5 11.6V6"/><path fill="#000" stroke-linecap="butt" stroke-linejoin="miter" d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"/><path fill="#000" d="M11.5 37a22.3 22.3 0 0 0 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10z"/><path stroke-linejoin="miter" d="M20 8h5"/><path stroke="#ececec" d="M32 29.5s8.5-4 6-9.7C34.1 14 25 18 22.5 24.6v2.1-2.1C20 18 9.9 14 7 19.9c-2.5 5.6 4.8 9 4.8 9"/><path stroke="#ececec" d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"/></g></symbol><symbol id="p-bQ" viewBox="0 0 45 45"><g fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><g stroke="none"><circle cx="6" cy="12" r="2.75"/><circle cx="14" cy="9" r="2.75"/><circle cx="22.5" cy="8" r="2.75"/><circle cx="31" cy="9" r="2.75"/><circle cx="39" cy="12" r="2.75"/></g><path stroke-linecap="butt" d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5z"/><path stroke-linecap="butt" d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path fill="none" stroke-linecap="butt" d="M11 38.5a35 35 1 0 0 23 0"/><path fill="none" stroke="#ececec" d="M11 29a35 35 1 0 1 23 0m-21.5 2.5h20m-21 3a35 35 1 0 0 22 0m-23 3a35 35 1 0 0 24 0"/></g></symbol><symbol id="p-bR" viewBox="0 0 45 45"><g fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path stroke-linecap="butt" d="M9 39h27v-3H9zm3.5-7 1.5-2.5h17l1.5 2.5zm-.5 4v-4h21v4z"/><path stroke-linecap="butt" stroke-linejoin="miter" d="M14 29.5v-13h17v13z"/><path stroke-linecap="butt" d="M14 16.5 11 14h23l-3 2.5zM11 14V9h4v2h5V9h5v2h5V9h4v5z"/><path fill="none" stroke="#ececec" stroke-linejoin="miter" stroke-width="1" d="M12 35.5h21m-20-4h19m-18-2h17m-17-13h17M11 14h23"/></g></symbol><symbol id="p-bB" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><g fill="#000" stroke-linecap="butt"><path d="M9 36c3.4-1 10.1.4 13.5-2 3.4 2.4 10.1 1 13.5 2 0 0 1.6.5 3 2-.7 1-1.6 1-3 .5-3.4-1-10.1.5-13.5-1-3.4 1.5-10.1 0-13.5 1-1.4.5-2.3.5-3-.5 1.4-2 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path stroke="#ececec" stroke-linejoin="miter" d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5"/></g></symbol><symbol id="p-bN" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path fill="#000" d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"/><path fill="#000" d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.04-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-1-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-2 2.5-3c1 0 1 3 1 3"/><path fill="#ececec" stroke="#ececec" d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0m5.43-9.75a.5 1.5 30 1 1-.86-.5.5 1.5 30 1 1 .86.5"/><path fill="#ececec" stroke="none" d="m24.55 10.4-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34s-5.79-6.64-9.19-7.16z"/></g></symbol><symbol id="p-bP" viewBox="0 0 45 45"><path stroke="#000" stroke-linecap="round" stroke-width="1.5" d="M22.5 9a4 4 0 0 0-3.22 6.38 6.48 6.48 0 0 0-.87 10.65c-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47a6.46 6.46 0 0 0-.87-10.65A4.01 4.01 0 0 0 22.5 9z"/></symbol></defs></svg>
+<header>
+  <h1>Repertoire Line Drill</h1>
+  <p class="sub">Load a Lichess study or PGN. Whoever sits at the screen plays the opponent from the arrows and checks your replies. You play the repertoire from memory on a real board.</p>
+</header>
 
-        <main class="layout">
-            <section class="board-wrap" aria-label="Board">
-                <svg
-                    id="board"
-                    viewBox="0 0 800 800"
-                    role="img"
-                    aria-label="Chess board"
-                ></svg>
-                <div id="moves" aria-live="polite"></div>
-            </section>
+<main class="layout">
+  <section class="board-wrap" aria-label="Board">
+    <svg id="board" viewBox="0 0 800 800" role="img" aria-label="Chess board"></svg>
+    <div id="moves" aria-live="polite"></div>
+  </section>
 
-            <section class="side">
-                <div class="card" id="status" aria-live="polite">
-                    <div id="kicker">Ready</div>
-                    <div id="big">Start</div>
-                    <div id="detail"></div>
-                    <div id="comment"></div>
-                    <div id="banner"></div>
+  <section class="side">
+    <div class="card" id="status" aria-live="polite">
+      <div id="kicker">Ready</div>
+      <div id="big">Start</div>
+      <div id="detail"></div>
+      <div id="comment"></div>
+      <div id="banner"></div>
 
-                    <div class="actions">
-                        <button
-                            class="btn"
-                            id="bBack"
-                            type="button"
-                            aria-label="Step back"
-                        >
-                            &larr; Back
-                        </button>
-                        <button class="btn primary" id="bNext" type="button">
-                            Start
-                        </button>
-                        <button class="btn bad" id="bWrong" type="button">
-                            Wrong
-                        </button>
-                    </div>
+      <div class="actions">
+        <button class="btn" id="bBack" type="button" aria-label="Step back">&larr; Back</button>
+        <button class="btn primary" id="bNext" type="button">Start</button>
+        <button class="btn bad" id="bWrong" type="button">Wrong</button>
+      </div>
 
-                    <div class="sec" id="lineSec">
-                        <div class="vlabel">
-                            <b>This line</b><span id="vlCount"></span>
-                        </div>
-                        <div id="vizLine" class="linebar" role="img"></div>
-                    </div>
+      <div class="sec" id="lineSec">
+        <div class="vlabel"><b>This line</b><span id="vlCount"></span></div>
+        <div id="vizLine" class="linebar" role="img"></div>
+      </div>
 
-                    <div class="sec" id="nav">
-                        <div class="vlabel"><b>Chapter</b></div>
-                        <div class="navrow">
-                            <button
-                                class="btn sm"
-                                id="chPrev"
-                                type="button"
-                                aria-label="Previous chapter"
-                            >
-                                &lsaquo;
-                            </button>
-                            <select id="jumpChap" aria-label="Chapter"></select>
-                            <button
-                                class="btn sm"
-                                id="chNext"
-                                type="button"
-                                aria-label="Next chapter"
-                            >
-                                &rsaquo;
-                            </button>
-                        </div>
-                        <div class="vlabel" style="margin-top: 14px">
-                            <b id="lineLabel">Lines</b
-                            ><span id="vcCount"></span>
-                        </div>
-                        <div class="navrow">
-                            <button
-                                class="btn sm"
-                                id="bPrev"
-                                type="button"
-                                aria-label="Previous line"
-                            >
-                                &lsaquo;
-                            </button>
-                            <div
-                                id="vizChap"
-                                class="chapgrid"
-                                role="group"
-                                aria-label="Lines in this chapter"
-                            ></div>
-                            <button
-                                class="btn sm"
-                                id="bSkip"
-                                type="button"
-                                aria-label="Next line"
-                            >
-                                &rsaquo;
-                            </button>
-                        </div>
-                    </div>
+      <div class="sec" id="nav">
+        <div class="vlabel"><b>Chapter</b></div>
+        <div class="navrow">
+          <button class="btn sm" id="chPrev" type="button" aria-label="Previous chapter">&lsaquo;</button>
+          <select id="jumpChap" aria-label="Chapter"></select>
+          <button class="btn sm" id="chNext" type="button" aria-label="Next chapter">&rsaquo;</button>
+        </div>
+        <div class="vlabel" style="margin-top:14px"><b id="lineLabel">Lines</b><span id="vcCount"></span></div>
+        <div class="navrow">
+          <button class="btn sm" id="bPrev" type="button" aria-label="Previous line">&lsaquo;</button>
+          <div id="vizChap" class="chapgrid" role="group" aria-label="Lines in this chapter"></div>
+          <button class="btn sm" id="bSkip" type="button" aria-label="Next line">&rsaquo;</button>
+        </div>
+      </div>
 
-                    <div class="sec">
-                        <div class="vlabel">
-                            <b>This session</b><span id="progress"></span>
-                        </div>
-                        <div class="bar" aria-hidden="true">
-                            <i id="barfill"></i>
-                        </div>
-                    </div>
+      <div class="sec">
+        <div class="vlabel"><b>This session</b><span id="progress"></span></div>
+        <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+      </div>
 
-                    <div class="tools">
-                        <button class="btn ghost" id="bFlip" type="button">
-                            Flip board
-                        </button>
-                        <a
-                            class="btn ghost"
-                            id="bLichess"
-                            href="#"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style="display: none"
-                            >Analyse on Lichess</a
-                        >
-                        <button
-                            class="btn ghost"
-                            id="bRestart"
-                            type="button"
-                            style="display: none"
-                        >
-                            Restart drill
-                        </button>
-                    </div>
-                    <p class="help">
-                        <kbd>Space</kbd> continue &middot; <kbd>X</kbd> wrong
-                        &middot; <kbd>&larr;</kbd> back &middot; <kbd>P</kbd>
-                        <kbd>N</kbd> line &middot; <kbd>F</kbd> flip &middot;
-                        <kbd>R</kbd> restart
-                    </p>
-                </div>
+      <div class="tools">
+        <button class="btn ghost" id="bFlip" type="button">Flip board</button>
+        <a class="btn ghost" id="bLichess" href="#" target="_blank" rel="noopener noreferrer" style="display:none">Analyse on Lichess</a>
+        <button class="btn ghost" id="bRestart" type="button" style="display:none">Restart drill</button>
+      </div>
+      <p class="help"><kbd>Space</kbd> continue &middot; <kbd>X</kbd> wrong &middot; <kbd>&larr;</kbd> back &middot; <kbd>P</kbd> <kbd>N</kbd> line &middot; <kbd>F</kbd> flip &middot; <kbd>R</kbd> restart</p>
+    </div>
 
-                <details class="card" id="setup" open>
-                    <summary>Studies and options</summary>
-                    <div class="field">
-                        <label for="studySel">Saved study</label>
-                        <div class="row" style="margin: 0">
-                            <select
-                                id="studySel"
-                                style="flex: 1 1 200px"
-                            ></select>
-                            <button class="btn" id="bDelStudy" type="button">
-                                Delete
-                            </button>
-                        </div>
-                        <div id="overall"></div>
-                        <button
-                            class="btn"
-                            id="bReset"
-                            type="button"
-                            style="margin-top: 8px; align-self: flex-start"
-                        >
-                            Reset progress for this session
-                        </button>
-                        <div id="storeNote">
-                            This view cannot save to the browser, so studies and
-                            progress last only until the page closes.
-                        </div>
-                    </div>
-                    <div class="field">
-                        <span class="legend"
-                            >Chapters (green = completed this session, red =
-                            completed with mistakes)</span
-                        >
-                        <div class="row" style="margin: 0">
-                            <button class="btn" id="bAll" type="button">
-                                All
-                            </button>
-                            <button class="btn" id="bNone" type="button">
-                                None
-                            </button>
-                        </div>
-                        <div
-                            id="chapters"
-                            role="group"
-                            aria-label="Chapters"
-                        ></div>
-                    </div>
-                    <div class="opts">
-                        <label
-                            ><input type="checkbox" id="shuffle" /><span
-                                >Shuffle the order of lines</span
-                            ></label
-                        >
-                        <label
-                            ><input type="checkbox" id="backup" /><span
-                                >Go back to the branch point after each
-                                line<small
-                                    >Saves replaying the shared opening moves,
-                                    but the board has to be taken back by hand.
-                                    Off means reset to the start every
-                                    time.</small
-                                ></span
-                            ></label
-                        >
-                        <label
-                            ><input
-                                type="checkbox"
-                                id="autoMine"
-                                checked
-                            /><span
-                                >Play my repertoire moves automatically (watch
-                                mode)<small
-                                    >Your moves are shown with a green arrow and
-                                    played by themselves instead of being
-                                    hidden. Good for learning a line before you
-                                    quiz yourself. Finishing a line this way
-                                    marks it completed.</small
-                                ></span
-                            ></label
-                        >
-                        <label id="delayRow"
-                            ><span style="min-width: 9em">Move Delay</span>
-                            <select id="autoDelay">
-                                <option value="1" selected>1 second</option>
-                                <option value="2">2 seconds</option>
-                                <option value="4">4 seconds</option>
-                                <option value="7">7 seconds</option>
-                            </select></label
-                        >
-                    </div>
-                    <div class="row">
-                        <button class="btn primary" id="bStart" type="button">
-                            Start
-                        </button>
-                    </div>
+    <details class="card" id="setup" open>
+      <summary>Studies and options</summary>
+      <div class="field">
+        <label for="studySel">Saved study</label>
+        <div class="row" style="margin:0">
+          <select id="studySel" style="flex:1 1 200px"></select>
+          <button class="btn" id="bRefresh" type="button" style="display:none">Update from Lichess</button>
+          <button class="btn" id="bDelStudy" type="button">Delete</button>
+        </div>
+        <div id="overall"></div>
+        <button class="btn" id="bReset" type="button" style="margin-top:8px;align-self:flex-start">Reset progress for this session</button>
+        <div id="storeNote">This view cannot save to the browser, so studies and progress last only until the page closes.</div>
+      </div>
+      <div class="field">
+        <span class="legend">Chapters (green = completed this session, red = completed with mistakes)</span>
+        <div class="row" style="margin:0">
+          <button class="btn" id="bAll" type="button">All</button>
+          <button class="btn" id="bNone" type="button">None</button>
+        </div>
+        <div id="chapters" role="group" aria-label="Chapters"></div>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="shuffle"><span>Shuffle the order of lines</span></label>
+        <label><input type="checkbox" id="backup"><span>Go back to the branch point after each line<small>Saves replaying the shared opening moves, but the board has to be taken back by hand. Off means reset to the start every time.</small></span></label>
+        <label><input type="checkbox" id="autoMine" checked><span>Play my repertoire moves automatically (watch mode)<small>Your moves are shown with a green arrow and played by themselves instead of being hidden. Good for learning a line before you quiz yourself. Finishing a line this way marks it completed.</small></span></label>
+        <label id="delayRow"><span style="min-width:9em">Move Delay</span>
+          <select id="autoDelay"><option value="1" selected>1 second</option><option value="2">2 seconds</option><option value="4">4 seconds</option><option value="7">7 seconds</option></select></label>
+      </div>
+      <div class="row"><button class="btn primary" id="bStart" type="button">Start</button></div>
 
-                    <details class="inner" id="addBox">
-                        <summary>Add or update a study</summary>
-                        <div class="field">
-                            <label for="studyName"
-                                >Name (using an existing name updates that study
-                                and keeps your progress)</label
-                            >
-                            <input
-                                type="text"
-                                id="studyName"
-                                placeholder="e.g. White repertoire"
-                            />
-                        </div>
-                        <div class="field">
-                            <label for="pgn"
-                                >PGN (on Lichess: Share &amp; export, Study PGN,
-                                then paste all chapters here, or open a
-                                file)</label
-                            >
-                            <textarea id="pgn" spellcheck="false"></textarea>
-                            <div class="row" style="margin-top: 4px">
-                                <button
-                                    class="btn primary"
-                                    id="bLoad"
-                                    type="button"
-                                >
-                                    Save study
-                                </button>
-                                <input
-                                    type="file"
-                                    id="file"
-                                    accept=".pgn,.txt,text/plain"
-                                    aria-label="Open a PGN file"
-                                />
-                            </div>
-                            <div id="loadmsg"></div>
-                            <ul id="warnings"></ul>
-                        </div>
-                    </details>
-                </details>
-            </section>
-        </main>
-        <footer
-            style="
-                max-width: 1120px;
-                margin: 0 auto;
-                padding: 0 16px 32px;
-                color: var(--muted);
-                font-size: 0.8rem;
-            "
-        >
-            Pieces: &ldquo;cburnett&rdquo; set by Colin M.L. Burnett, the
-            default on Lichess (GPL v2+ / CC BY-SA 3.0).
-        </footer>
+      <details class="inner" id="addBox">
+        <summary>Add or update a study</summary>
+        <div class="field">
+          <label for="studyUrl">Import from Lichess</label>
+          <div class="row" style="margin:0">
+            <input type="text" id="studyUrl" placeholder="https://lichess.org/study/xxxxxxxx" inputmode="url" autocomplete="off" spellcheck="false" style="flex:1 1 220px;width:auto">
+            <button class="btn primary" id="bImport" type="button" style="flex:0 0 auto">Import</button>
+          </div>
+          <small class="help" style="margin:0">Fetches every chapter of the study. Studies must be public or unlisted, or use a token below.</small>
+          <details style="margin-top:4px">
+            <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted)">Private study?</summary>
+            <div class="field" style="margin-top:8px">
+              <label for="lichessToken">Lichess personal access token with the study:read permission (kept only in this browser)</label>
+              <input type="text" id="lichessToken" autocomplete="off" spellcheck="false" placeholder="lip_...">
+            </div>
+          </details>
+        </div>
+        <div class="field">
+          <label for="studyName">Name (using an existing name updates that study and keeps your progress)</label>
+          <input type="text" id="studyName" placeholder="e.g. White repertoire">
+        </div>
+        <div class="field">
+          <label for="pgn">Or paste a PGN (on Lichess: Share &amp; export, Study PGN), or open a file</label>
+          <textarea id="pgn" spellcheck="false"></textarea>
+          <div class="row" style="margin-top:4px">
+            <button class="btn primary" id="bLoad" type="button">Save study</button>
+            <input type="file" id="file" accept=".pgn,.txt,text/plain" aria-label="Open a PGN file">
+          </div>
+          <div id="loadmsg"></div>
+          <ul id="warnings"></ul>
+        </div>
+      </details>
+    </details>
+  </section>
+</main>
+<footer style="max-width:1120px;margin:0 auto;padding:0 16px 32px;color:var(--muted);font-size:0.8rem">Pieces: &ldquo;cburnett&rdquo; set by Colin M.L. Burnett, the default on Lichess (GPL v2+ / CC BY-SA 3.0).</footer>
 
-        <script src="vendor/chess.js"></script>
-        <script src="walker.js"></script>
-        <script>
-            (function () {
-                'use strict';
-                var W = window.Walker;
-                var $ = function (id) {
-                    return document.getElementById(id);
-                };
-                var START_FEN =
-                    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-                var GLYPH = { k: '♚︎', q: '♛︎', r: '♜︎', b: '♝︎', n: '♞︎', p: '♟︎' };
+<script src="vendor/chess.js"></script>
+<script src="walker.js"></script>
+<script>
+(function () {
+  'use strict';
+  var W = window.Walker;
+  var $ = function (id) { return document.getElementById(id); };
+  var START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  var GLYPH = { k: '♚︎', q: '♛︎', r: '♜︎', b: '♝︎', n: '♞︎', p: '♟︎' };
 
-                var S = {
-                    prog: {},
-                    chapters: [],
-                    selected: {},
-                    queue: [],
-                    qi: 0,
-                    line: null,
-                    k: 0,
-                    startK: 0,
-                    rev: false,
-                    wrongLine: 0,
-                    missPlies: {},
-                    takeBack: 0,
-                    finished: false,
-                    flipOverride: null,
-                    right: 0,
-                    wrong: 0,
-                    done: 0,
-                };
+  var S = {
+    prog: {}, chapters: [], selected: {}, queue: [], qi: 0, line: null, k: 0, startK: 0, rev: false,
+    wrongLine: 0, missPlies: {}, takeBack: 0, finished: false, flipOverride: null,
+    right: 0, wrong: 0, done: 0
+  };
 
-                var mem = {};
-                function store(key, val) {
-                    try {
-                        if (val === undefined) return localStorage.getItem(key);
-                        localStorage.setItem(key, val);
-                        return null;
-                    } catch (e) {
-                        $('storeNote').style.display = '';
-                        if (val === undefined)
-                            return mem[key] === undefined ? null : mem[key];
-                        mem[key] = val;
-                        return null;
-                    }
-                }
-                function jget(key) {
-                    try {
-                        return JSON.parse(store(key) || '{}') || {};
-                    } catch (e) {
-                        return {};
-                    }
-                }
-                function getStudies() {
-                    return jget('rld.studies');
-                }
-                function putStudies(o) {
-                    store('rld.studies', JSON.stringify(o));
-                }
-                function getProg() {
-                    return S.prog;
-                }
-                function setProg(key, clean) {
-                    S.prog[key] = { clean: clean };
-                }
+  var mem = {};
+  function store(key, val) {
+    try {
+      if (val === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, val); return null;
+    } catch (e) {
+      $('storeNote').style.display = '';
+      if (val === undefined) return mem[key] === undefined ? null : mem[key];
+      mem[key] = val; return null;
+    }
+  }
+  function jget(key) { try { return JSON.parse(store(key) || '{}') || {}; } catch (e) { return {}; } }
+  function getStudies() { return jget('rld.studies'); }
+  function putStudies(o) { store('rld.studies', JSON.stringify(o)); }
+  function getProg() { return S.prog; }
+  function setProg(key, clean) { S.prog[key] = { clean: clean }; }
 
-                function myColor(line) {
-                    return line.orientation;
-                }
-                function isMine(line, k) {
-                    return line.plies[k].color === myColor(line);
-                }
+  function myColor(line) { return line.orientation; }
+  function isMine(line, k) { return line.plies[k].color === myColor(line); }
 
-                /* ---------- board drawing ---------- */
-                function center(name, flip) {
-                    var f = name.charCodeAt(0) - 97,
-                        r = 8 - parseInt(name[1], 10);
-                    return [
-                        (flip ? 7 - f : f) * 100 + 50,
-                        (flip ? 7 - r : r) * 100 + 50,
-                    ];
-                }
-                function drawBoard(fen, flip, hl, arrow) {
-                    var out = [];
-                    var r, f, xi, yi;
-                    for (r = 0; r < 8; r++)
-                        for (f = 0; f < 8; f++) {
-                            xi = flip ? 7 - f : f;
-                            yi = flip ? 7 - r : r;
-                            out.push(
-                                '<rect x="' +
-                                    xi * 100 +
-                                    '" y="' +
-                                    yi * 100 +
-                                    '" width="100" height="100" fill="' +
-                                    ((f + r) % 2 === 0
-                                        ? 'var(--sq-light)'
-                                        : 'var(--sq-dark)') +
-                                    '"/>',
-                            );
-                        }
-                    (hl || []).forEach(function (n) {
-                        var c = center(n, flip);
-                        out.push(
-                            '<rect x="' +
-                                (c[0] - 50) +
-                                '" y="' +
-                                (c[1] - 50) +
-                                '" width="100" height="100" fill="var(--hl)"/>',
-                        );
-                    });
-                    for (xi = 0; xi < 8; xi++) {
-                        f = flip ? 7 - xi : xi;
-                        r = flip ? 0 : 7;
-                        out.push(
-                            '<text x="' +
-                                (xi * 100 + 90) +
-                                '" y="792" text-anchor="end" font-size="20" font-weight="600" fill="' +
-                                ((f + r) % 2 === 0
-                                    ? 'var(--sq-dark)'
-                                    : 'var(--sq-light)') +
-                                '" font-family="var(--font-body)">' +
-                                String.fromCharCode(97 + f) +
-                                '</text>',
-                        );
-                    }
-                    for (yi = 0; yi < 8; yi++) {
-                        r = flip ? 7 - yi : yi;
-                        f = flip ? 7 : 0;
-                        out.push(
-                            '<text x="8" y="' +
-                                (yi * 100 + 24) +
-                                '" font-size="20" font-weight="600" fill="' +
-                                ((f + r) % 2 === 0
-                                    ? 'var(--sq-dark)'
-                                    : 'var(--sq-light)') +
-                                '" font-family="var(--font-body)">' +
-                                (8 - r) +
-                                '</text>',
-                        );
-                    }
-                    var rows = fen.split(' ')[0].split('/');
-                    for (r = 0; r < 8; r++) {
-                        f = 0;
-                        for (var ci = 0; ci < rows[r].length; ci++) {
-                            var ch = rows[r][ci];
-                            if (/\d/.test(ch)) {
-                                f += parseInt(ch, 10);
-                                continue;
-                            }
-                            var white = ch === ch.toUpperCase();
-                            xi = flip ? 7 - f : f;
-                            yi = flip ? 7 - r : r;
-                            out.push(
-                                '<use data-sq="' +
-                                    String.fromCharCode(97 + f) +
-                                    (8 - r) +
-                                    '" href="#p-' +
-                                    (white ? 'w' : 'b') +
-                                    ch.toUpperCase() +
-                                    '" x="' +
-                                    (xi * 100 + 4) +
-                                    '" y="' +
-                                    (yi * 100 + 4) +
-                                    '" width="92" height="92"/>',
-                            );
-                            f++;
-                        }
-                    }
-                    if (arrow) {
-                        var a = center(arrow.from, flip),
-                            b = center(arrow.to, flip);
-                        var dx = b[0] - a[0],
-                            dy = b[1] - a[1],
-                            len = Math.sqrt(dx * dx + dy * dy) || 1;
-                        var ux = dx / len,
-                            uy = dy / len,
-                            px = -uy,
-                            py = ux;
-                        var sx = a[0] + ux * 24,
-                            sy = a[1] + uy * 24;
-                        var tipx = b[0] - ux * 6,
-                            tipy = b[1] - uy * 6;
-                        var bx = tipx - ux * 44,
-                            by = tipy - uy * 44;
-                        out.push(
-                            '<g opacity="0.88" fill="' +
-                                arrow.color +
-                                '" stroke="' +
-                                arrow.color +
-                                '">' +
-                                '<line x1="' +
-                                sx +
-                                '" y1="' +
-                                sy +
-                                '" x2="' +
-                                bx +
-                                '" y2="' +
-                                by +
-                                '" stroke-width="20" stroke-linecap="butt"/>' +
-                                '<polygon stroke="none" points="' +
-                                tipx +
-                                ',' +
-                                tipy +
-                                ' ' +
-                                (bx + px * 32) +
-                                ',' +
-                                (by + py * 32) +
-                                ' ' +
-                                (bx - px * 32) +
-                                ',' +
-                                (by - py * 32) +
-                                '"/></g>',
-                        );
-                    }
-                    $('board').innerHTML = out.join('');
-                }
+  /* ---------- board drawing ---------- */
+  function center(name, flip) {
+    var f = name.charCodeAt(0) - 97, r = 8 - parseInt(name[1], 10);
+    return [(flip ? 7 - f : f) * 100 + 50, (flip ? 7 - r : r) * 100 + 50];
+  }
+  function drawBoard(fen, flip, hl, arrow) {
+    var out = [];
+    var r, f, xi, yi;
+    for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
+      xi = flip ? 7 - f : f; yi = flip ? 7 - r : r;
+      out.push('<rect x="' + xi * 100 + '" y="' + yi * 100 + '" width="100" height="100" fill="' + (((f + r) % 2 === 0) ? 'var(--sq-light)' : 'var(--sq-dark)') + '"/>');
+    }
+    (hl || []).forEach(function (n) {
+      var c = center(n, flip);
+      out.push('<rect x="' + (c[0] - 50) + '" y="' + (c[1] - 50) + '" width="100" height="100" fill="var(--hl)"/>');
+    });
+    for (xi = 0; xi < 8; xi++) {
+      f = flip ? 7 - xi : xi; r = flip ? 0 : 7;
+      out.push('<text x="' + (xi * 100 + 90) + '" y="792" text-anchor="end" font-size="20" font-weight="600" fill="' + (((f + r) % 2 === 0) ? 'var(--sq-dark)' : 'var(--sq-light)') + '" font-family="var(--font-body)">' + String.fromCharCode(97 + f) + '</text>');
+    }
+    for (yi = 0; yi < 8; yi++) {
+      r = flip ? 7 - yi : yi; f = flip ? 7 : 0;
+      out.push('<text x="8" y="' + (yi * 100 + 24) + '" font-size="20" font-weight="600" fill="' + (((f + r) % 2 === 0) ? 'var(--sq-dark)' : 'var(--sq-light)') + '" font-family="var(--font-body)">' + (8 - r) + '</text>');
+    }
+    var rows = fen.split(' ')[0].split('/');
+    for (r = 0; r < 8; r++) {
+      f = 0;
+      for (var ci = 0; ci < rows[r].length; ci++) {
+        var ch = rows[r][ci];
+        if (/\d/.test(ch)) { f += parseInt(ch, 10); continue; }
+        var white = ch === ch.toUpperCase();
+        xi = flip ? 7 - f : f; yi = flip ? 7 - r : r;
+        out.push('<use data-sq="' + String.fromCharCode(97 + f) + (8 - r) + '" href="#p-' + (white ? 'w' : 'b') + ch.toUpperCase() + '" x="' + (xi * 100 + 4) + '" y="' + (yi * 100 + 4) + '" width="92" height="92"/>');
+        f++;
+      }
+    }
+    if (arrow) {
+      var a = center(arrow.from, flip), b = center(arrow.to, flip);
+      var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / len, uy = dy / len, px = -uy, py = ux;
+      var sx = a[0] + ux * 24, sy = a[1] + uy * 24;
+      var tipx = b[0] - ux * 6, tipy = b[1] - uy * 6;
+      var bx = tipx - ux * 44, by = tipy - uy * 44;
+      out.push('<g opacity="0.88" fill="' + arrow.color + '" stroke="' + arrow.color + '">' +
+        '<line x1="' + sx + '" y1="' + sy + '" x2="' + bx + '" y2="' + by + '" stroke-width="20" stroke-linecap="butt"/>' +
+        '<polygon stroke="none" points="' + tipx + ',' + tipy + ' ' + (bx + px * 32) + ',' + (by + py * 32) + ' ' + (bx - px * 32) + ',' + (by - py * 32) + '"/></g>');
+    }
+    $('board').innerHTML = out.join('');
+  }
 
-                /* ---------- rendering ---------- */
-                function setText(id, t) {
-                    $(id).textContent = t;
-                }
-                function show(id, on) {
-                    $(id).style.display = on ? '' : 'none';
-                }
+  /* ---------- rendering ---------- */
+  function setText(id, t) { $(id).textContent = t; }
+  function show(id, on) { $(id).style.display = on ? '' : 'none'; }
 
-                function selectedLines() {
-                    var sel = [];
-                    S.chapters.forEach(function (c) {
-                        if (S.selected[c.index]) sel = sel.concat(c.lines);
-                    });
-                    return sel;
-                }
+  function selectedLines() {
+    var sel = [];
+    S.chapters.forEach(function (c) { if (S.selected[c.index]) sel = sel.concat(c.lines); });
+    return sel;
+  }
 
-                function bottomIsBlack(line) {
-                    var me = myColor(line);
-                    var oppBottom = me === 'w' ? 'b' : 'w';
-                    var bottom = oppBottom;
-                    var flip = bottom === 'b';
-                    return S.flipOverride === null
-                        ? flip
-                        : S.flipOverride
-                          ? !flip
-                          : flip;
-                }
+  function bottomIsBlack(line) {
+    var me = myColor(line);
+    var oppBottom = me === 'w' ? 'b' : 'w';
+    var bottom = oppBottom;
+    var flip = bottom === 'b';
+    return S.flipOverride === null ? flip : (S.flipOverride ? !flip : flip);
+  }
 
-                function renderInner() {
-                    var L = S.line;
-                    clearTimeout(S.timer);
-                    var kicker = $('kicker'),
-                        next = $('bNext');
-                    kicker.className = '';
-                    show('comment', false);
-                    show('banner', false);
-                    $('bWrong').style.display = 'none';
-                    setText('progress', '');
-                    $('barfill').style.width = '0';
-                    $('bBack').disabled = true;
-                    $('bSkip').disabled = true;
-                    $('bPrev').disabled = true;
+  function renderInner() {
+    var L = S.line;
+    clearTimeout(S.timer);
+    var kicker = $('kicker'), next = $('bNext');
+    kicker.className = '';
+    show('comment', false); show('banner', false);
+    $('bWrong').style.display = 'none';
+    setText('progress', ''); $('barfill').style.width = '0';
+    $('bBack').disabled = true; $('bSkip').disabled = true; $('bPrev').disabled = true;
 
-                    if (S.finished) {
-                        drawBoard(START_FEN, false, [], null);
-                        setText('moves', '');
-                        setText('kicker', 'Drill complete');
-                        setText('big', 'Done');
-                        setText(
-                            'detail',
-                            S.done +
-                                ' lines. Correct moves: ' +
-                                S.right +
-                                '. Wrong: ' +
-                                S.wrong +
-                                '.',
-                        );
-                        $('barfill').style.width = '100%';
-                        next.textContent = 'Drill again';
-                        return;
-                    }
+    if (S.finished) {
+      drawBoard(START_FEN, false, [], null);
+      setText('moves', '');
+      setText('kicker', 'Drill complete');
+      setText('big', 'Done');
+      setText('detail', S.done + ' lines. Correct moves: ' + S.right + '. Wrong: ' + S.wrong + '.');
+      $('barfill').style.width = '100%';
+      next.textContent = 'Drill again';
+      return;
+    }
 
-                    if (!L) {
-                        var lines = selectedLines();
-                        var first = lines[0];
-                        var fen = first ? first.fens[0] : START_FEN;
-                        var flip = first ? bottomIsBlack(first) : false;
-                        drawBoard(fen, flip, [], null);
-                        setText('moves', '');
-                        setText('kicker', 'Ready');
-                        setText('big', 'Start');
-                        setText(
-                            'detail',
-                            lines.length
-                                ? lines.length +
-                                      ' line' +
-                                      (lines.length === 1 ? '' : 's') +
-                                      ' selected from ' +
-                                      S.chapters.filter(function (c) {
-                                          return S.selected[c.index];
-                                      }).length +
-                                      ' chapter(s).'
-                                : 'Add a study under Studies and options, then pick at least one chapter.',
-                        );
-                        next.textContent = 'Start';
-                        next.disabled = !lines.length;
-                        return;
-                    }
+    if (!L) {
+      var lines = selectedLines();
+      var first = lines[0];
+      var fen = first ? first.fens[0] : START_FEN;
+      var flip = first ? bottomIsBlack(first) : false;
+      drawBoard(fen, flip, [], null);
+      setText('moves', '');
+      setText('kicker', 'Ready');
+      setText('big', 'Start');
+      setText('detail', lines.length ? lines.length + ' line' + (lines.length === 1 ? '' : 's') + ' selected from ' + S.chapters.filter(function (c) { return S.selected[c.index]; }).length + ' chapter(s).' : 'Add a study under Studies and options, then pick at least one chapter.');
+      next.textContent = 'Start';
+      next.disabled = !lines.length;
+      return;
+    }
 
-                    next.disabled = false;
-                    var n = L.plies.length,
-                        k = S.k;
-                    var flipB = bottomIsBlack(L);
-                    var hl =
-                        k > 0 ? [L.plies[k - 1].from, L.plies[k - 1].to] : [];
-                    var pct = S.queue.length
-                        ? (S.qi / S.queue.length) * 100
-                        : 0;
-                    $('barfill').style.width = pct + '%';
-                    $('bBack').disabled = !(S.rev || k > 0);
-                    $('bSkip').disabled = false;
-                    $('bPrev').disabled = S.qi === 0;
-                    setText('moves', W.moveText(L, k));
+    next.disabled = false;
+    var n = L.plies.length, k = S.k;
+    var flipB = bottomIsBlack(L);
+    var hl = k > 0 ? [L.plies[k - 1].from, L.plies[k - 1].to] : [];
+    var pct = S.queue.length ? (S.qi / S.queue.length) * 100 : 0;
+    $('barfill').style.width = pct + '%';
+    $('bBack').disabled = !(S.rev || k > 0);
+    $('bSkip').disabled = false; $('bPrev').disabled = S.qi === 0;
+    setText('moves', W.moveText(L, k));
 
-                    if (k === S.startK && !S.rev) {
-                        var msg = '';
-                        if (L.startFen !== START_FEN && S.startK === 0)
-                            msg = 'Set up the position shown on the board.';
-                        else if (S.startK === 0)
-                            msg =
-                                S.qi === 0
-                                    ? 'Start from the starting position.'
-                                    : 'New line. Reset the pieces to the starting position.';
-                        else
-                            msg =
-                                'Take back ' +
-                                S.takeBack +
-                                ' half-move' +
-                                (S.takeBack === 1 ? '' : 's') +
-                                ' so the real board matches the one shown.';
-                        setText('banner', msg);
-                        show('banner', true);
-                    }
+    if (k === S.startK && !S.rev) {
+      var msg = '';
+      if (L.startFen !== START_FEN && S.startK === 0) msg = 'Set up the position shown on the board.';
+      else if (S.startK === 0) msg = S.qi === 0 ? 'Start from the starting position.' : 'New line. Reset the pieces to the starting position.';
+      else msg = 'Take back ' + S.takeBack + ' half-move' + (S.takeBack === 1 ? '' : 's') + ' so the real board matches the one shown.';
+      setText('banner', msg); show('banner', true);
+    }
 
-                    if (k >= n) {
-                        drawBoard(L.fens[n], flipB, hl, null);
-                        kicker.className = 'me';
-                        setText(
-                            'kicker',
-                            S.wrongLine
-                                ? S.wrongLine + ' wrong'
-                                : 'No mistakes',
-                        );
-                        setText('big', 'End of line');
-                        if (S.endFor !== L) {
-                            S.endFor = L;
-                            S.endAt = Date.now();
-                        }
-                        setText('detail', W.moveText(L, n));
-                        next.textContent =
-                            S.qi + 1 >= S.queue.length ? 'Finish' : 'Next line';
-                        return;
-                    }
+    if (k >= n) {
+      drawBoard(L.fens[n], flipB, hl, null);
+      kicker.className = 'me';
+      setText('kicker', S.wrongLine ? S.wrongLine + ' wrong' : 'No mistakes');
+      setText('big', 'End of line');
+      if (S.endFor !== L) { S.endFor = L; S.endAt = Date.now(); }
+      setText('detail', W.moveText(L, n));
+      next.textContent = S.qi + 1 >= S.queue.length ? 'Finish' : 'Next line';
+      return;
+    }
 
-                    var p = L.plies[k];
-                    var mine = isMine(L, k);
-                    if (p.comment && (!mine || S.rev)) {
-                        setText('comment', p.comment);
-                        show('comment', true);
-                    }
+    var p = L.plies[k];
+    var mine = isMine(L, k);
+    if (p.comment && (!mine || S.rev)) { setText('comment', p.comment); show('comment', true); }
 
-                    if (!mine) {
-                        drawBoard(L.fens[k], flipB, hl, {
-                            from: p.from,
-                            to: p.to,
-                            color: 'var(--opp)',
-                        });
-                        kicker.className = 'opp';
-                        setText('kicker', 'Opponent plays');
-                        setText('big', p.san);
-                        setText('detail', '');
-                        next.textContent = 'Played it';
-                    } else if (!S.rev && $('autoMine').checked) {
-                        var secsM = parseInt($('autoDelay').value, 10) || 1;
-                        drawBoard(L.fens[k], flipB, hl, {
-                            from: p.from,
-                            to: p.to,
-                            color: 'var(--me)',
-                        });
-                        kicker.className = 'me';
-                        setText('kicker', 'Repertoire move (watch)');
-                        setText('big', p.san);
-                        setText('detail', '');
-                        next.textContent = 'Next';
-                        if (p.comment) {
-                            setText('comment', p.comment);
-                            show('comment', true);
-                        }
-                        S.timer = setTimeout(advance, secsM * 1000);
-                    } else if (!S.rev) {
-                        drawBoard(L.fens[k], flipB, hl, null);
-                        kicker.className = 'me';
-                        setText('kicker', 'Your move');
-                        setText('big', '?');
-                        setText('detail', '');
-                        next.textContent = 'Show answer';
-                    } else {
-                        drawBoard(L.fens[k], flipB, hl, {
-                            from: p.from,
-                            to: p.to,
-                            color: 'var(--me)',
-                        });
-                        kicker.className = 'me';
-                        setText('kicker', 'Repertoire move');
-                        setText('big', p.san);
-                        setText('detail', '');
-                        next.textContent = 'Correct';
-                        $('bWrong').style.display = '';
-                    }
-                }
+    if (!mine) {
+      drawBoard(L.fens[k], flipB, hl, { from: p.from, to: p.to, color: 'var(--opp)' });
+      kicker.className = 'opp';
+      setText('kicker', 'Opponent plays');
+      setText('big', p.san);
+      setText('detail', '');
+      next.textContent = 'Played it';
+    } else if (!S.rev && $('autoMine').checked) {
+      var secsM = parseInt($('autoDelay').value, 10) || 1;
+      drawBoard(L.fens[k], flipB, hl, { from: p.from, to: p.to, color: 'var(--me)' });
+      kicker.className = 'me';
+      setText('kicker', 'Repertoire move (watch)');
+      setText('big', p.san);
+      setText('detail', '');
+      next.textContent = 'Next';
+      if (p.comment) { setText('comment', p.comment); show('comment', true); }
+      S.timer = setTimeout(advance, secsM * 1000);
+    } else if (!S.rev) {
+      drawBoard(L.fens[k], flipB, hl, null);
+      kicker.className = 'me';
+      setText('kicker', 'Your move');
+      setText('big', '?');
+      setText('detail', '');
+      next.textContent = 'Show answer';
+    } else {
+      drawBoard(L.fens[k], flipB, hl, { from: p.from, to: p.to, color: 'var(--me)' });
+      kicker.className = 'me';
+      setText('kicker', 'Repertoire move');
+      setText('big', p.san);
+      setText('detail', '');
+      next.textContent = 'Correct';
+      $('bWrong').style.display = '';
+    }
+  }
 
-                function navChapters() {
-                    if (S.line && S.queue.length) {
-                        var seen = {},
-                            out = [];
-                        S.queue.forEach(function (l) {
-                            if (!seen[l.chapter]) {
-                                seen[l.chapter] = 1;
-                                out.push(S.chapters[l.chapter]);
-                            }
-                        });
-                        return out;
-                    }
-                    return S.chapters.filter(function (c) {
-                        return S.selected[c.index];
-                    });
-                }
-                function drawNav() {
-                    var L = S.line,
-                        k = S.k,
-                        chs = navChapters(),
-                        nav = $('nav'),
-                        prog = getProg();
-                    // session progress
-                    var pool = S.queue.length ? S.queue : selectedLines(),
-                        doneN = 0;
-                    pool.forEach(function (l) {
-                        if (prog[l.key]) doneN++;
-                    });
-                    setText(
-                        'progress',
-                        pool.length
-                            ? doneN + ' of ' + pool.length + ' lines completed'
-                            : '',
-                    );
-                    $('barfill').style.width =
-                        (pool.length ? (doneN / pool.length) * 100 : 0) + '%';
-                    // this-line bar
-                    show('lineSec', !!L);
-                    if (L) {
-                        var bar = $('vizLine'),
-                            n = L.plies.length,
-                            wrongN = Object.keys(S.missPlies).length;
-                        bar.innerHTML = '';
-                        L.plies.forEach(function (p, i) {
-                            var el = document.createElement('i'),
-                                cls = '';
-                            if (i < k)
-                                cls += S.missPlies[i] ? 'done miss' : 'done';
-                            if (i === k && k < n)
-                                cls += (cls ? ' ' : '') + 'cur';
-                            el.className = cls;
-                            bar.appendChild(el);
-                        });
-                        setText(
-                            'vlCount',
-                            (k >= n
-                                ? 'all ' + n
-                                : 'move ' + (k + 1) + ' of ' + n) +
-                                (wrongN ? ' \u00b7 ' + wrongN + ' wrong' : ''),
-                        );
-                        bar.setAttribute(
-                            'aria-label',
-                            'Progress through this line: ' +
-                                Math.min(k, n) +
-                                ' of ' +
-                                n +
-                                ' moves done',
-                        );
-                    }
-                    // navigator
-                    if (!chs.length) {
-                        show('nav', false);
-                        return;
-                    }
-                    show('nav', true);
-                    var cur = L ? S.chapters[L.chapter] : chs[0],
-                        ci = chs.indexOf(cur);
-                    if (ci < 0) {
-                        cur = chs[0];
-                        ci = 0;
-                    }
-                    var sel = $('jumpChap'),
-                        sig = chs
-                            .map(function (c) {
-                                return c.index;
-                            })
-                            .join(',');
-                    if (sel.dataset.sig !== sig) {
-                        sel.innerHTML = '';
-                        chs.forEach(function (c) {
-                            var o = document.createElement('option');
-                            o.value = String(c.index);
-                            o.textContent = c.title;
-                            sel.appendChild(o);
-                        });
-                        sel.dataset.sig = sig;
-                    }
-                    sel.value = String(cur.index);
-                    $('chPrev').disabled = ci <= 0;
-                    $('chNext').disabled = ci >= chs.length - 1;
-                    var grid = $('vizChap'),
-                        ok = 0,
-                        bad = 0,
-                        curIdx = L ? cur.lines.indexOf(L) : -1;
-                    grid.innerHTML = '';
-                    cur.lines.forEach(function (l, i) {
-                        var e = prog[l.key],
-                            el = document.createElement('button'),
-                            st =
-                                e && e.clean === true
-                                    ? 'ok'
-                                    : e && e.clean === false
-                                      ? 'no'
-                                      : '';
-                        if (st === 'ok') ok++;
-                        else if (st === 'no') bad++;
-                        el.className = (
-                            st + (i === curIdx ? ' cur' : '')
-                        ).trim();
-                        el.textContent = String(i + 1);
-                        el.title =
-                            'Line ' +
-                            (i + 1) +
-                            (st === 'ok'
-                                ? ' completed'
-                                : st === 'no'
-                                  ? ' completed with mistakes'
-                                  : ' not yet completed');
-                        el.type = 'button';
-                        el.setAttribute('aria-label', el.title);
-                        el.addEventListener('click', function () {
-                            jumpTo(l);
-                        });
-                        grid.appendChild(el);
-                    });
-                    setText(
-                        'lineLabel',
-                        curIdx >= 0
-                            ? 'Line ' + (curIdx + 1) + ' of ' + cur.lines.length
-                            : cur.lines.length +
-                                  ' line' +
-                                  (cur.lines.length === 1 ? '' : 's'),
-                    );
-                    setText(
-                        'vcCount',
-                        ok +
-                            bad +
-                            ' / ' +
-                            cur.lines.length +
-                            ' completed' +
-                            (bad ? ', ' + bad + ' with mistakes' : ''),
-                    );
-                    $('bPrev').disabled = !L || S.qi === 0;
-                    $('bSkip').disabled = !L;
-                }
-                function render() {
-                    renderInner();
-                    animateStep();
-                    drawNav();
-                    var a = $('bLichess'),
-                        L = S.line;
-                    $('bRestart').style.display = L ? '' : 'none';
-                    if (L && S.k <= L.plies.length) {
-                        a.href =
-                            'https://lichess.org/analysis/' +
-                            L.fens[S.k].replace(/ /g, '_') +
-                            '?color=' +
-                            (myColor(L) === 'b' ? 'black' : 'white');
-                        a.style.display = 'inline-flex';
-                    } else {
-                        a.style.display = 'none';
-                    }
-                }
-                function animateStep() {
-                    var L = S.line,
-                        k = S.k,
-                        same = !!L && S.lastLine === L,
-                        dk = same ? k - S.lastK : 0;
-                    S.lastLine = L;
-                    S.lastK = k;
-                    if (!L || Math.abs(dk) !== 1) return;
-                    if (
-                        window.matchMedia &&
-                        matchMedia('(prefers-reduced-motion: reduce)').matches
-                    )
-                        return;
-                    var ply = L.plies[dk === 1 ? k - 1 : k],
-                        flip = bottomIsBlack(L),
-                        moves = [[ply.from, ply.to]];
-                    if (/^O-O/.test(ply.san)) {
-                        var rk = ply.color === 'w' ? '1' : '8',
-                            long = /^O-O-O/.test(ply.san);
-                        moves.push(
-                            long ? ['a' + rk, 'd' + rk] : ['h' + rk, 'f' + rk],
-                        );
-                    }
-                    moves.forEach(function (m) {
-                        var from = dk === 1 ? m[0] : m[1],
-                            to = dk === 1 ? m[1] : m[0];
-                        var el = $('board').querySelector(
-                            'use[data-sq="' + to + '"]',
-                        );
-                        if (!el || !el.animate) return;
-                        var a = center(from, flip),
-                            b = center(to, flip);
-                        el.parentNode.appendChild(el);
-                        el.animate(
-                            [
-                                {
-                                    transform:
-                                        'translate(' +
-                                        (a[0] - b[0]) +
-                                        'px,' +
-                                        (a[1] - b[1]) +
-                                        'px)',
-                                },
-                                { transform: 'translate(0px,0px)' },
-                            ],
-                            {
-                                duration: 280,
-                                easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)',
-                            },
-                        );
-                    });
-                }
+  function navChapters() {
+    if (S.line && S.queue.length) {
+      var seen = {}, out = [];
+      S.queue.forEach(function (l) { if (!seen[l.chapter]) { seen[l.chapter] = 1; out.push(S.chapters[l.chapter]); } });
+      return out;
+    }
+    return S.chapters.filter(function (c) { return S.selected[c.index]; });
+  }
+  function drawNav() {
+    var L = S.line, k = S.k, chs = navChapters(), nav = $('nav'), prog = getProg();
+    // session progress
+    var pool = S.queue.length ? S.queue : selectedLines(), doneN = 0;
+    pool.forEach(function (l) { if (prog[l.key]) doneN++; });
+    setText('progress', pool.length ? doneN + ' of ' + pool.length + ' lines completed' : '');
+    $('barfill').style.width = (pool.length ? doneN / pool.length * 100 : 0) + '%';
+    // this-line bar
+    show('lineSec', !!L);
+    if (L) {
+      var bar = $('vizLine'), n = L.plies.length, wrongN = Object.keys(S.missPlies).length;
+      bar.innerHTML = '';
+      L.plies.forEach(function (p, i) {
+        var el = document.createElement('i'), cls = '';
+        if (i < k) cls += S.missPlies[i] ? 'done miss' : 'done';
+        if (i === k && k < n) cls += (cls ? ' ' : '') + 'cur';
+        el.className = cls; bar.appendChild(el);
+      });
+      setText('vlCount', (k >= n ? 'all ' + n : 'move ' + (k + 1) + ' of ' + n) + (wrongN ? ' \u00b7 ' + wrongN + ' wrong' : ''));
+      bar.setAttribute('aria-label', 'Progress through this line: ' + Math.min(k, n) + ' of ' + n + ' moves done');
+    }
+    // navigator
+    if (!chs.length) { show('nav', false); return; }
+    show('nav', true);
+    var cur = L ? S.chapters[L.chapter] : chs[0], ci = chs.indexOf(cur);
+    if (ci < 0) { cur = chs[0]; ci = 0; }
+    var sel = $('jumpChap'), sig = chs.map(function (c) { return c.index; }).join(',');
+    if (sel.dataset.sig !== sig) {
+      sel.innerHTML = '';
+      chs.forEach(function (c) { var o = document.createElement('option'); o.value = String(c.index); o.textContent = c.title; sel.appendChild(o); });
+      sel.dataset.sig = sig;
+    }
+    sel.value = String(cur.index);
+    $('chPrev').disabled = ci <= 0; $('chNext').disabled = ci >= chs.length - 1;
+    var grid = $('vizChap'), ok = 0, bad = 0, curIdx = L ? cur.lines.indexOf(L) : -1;
+    grid.innerHTML = '';
+    cur.lines.forEach(function (l, i) {
+      var e = prog[l.key], el = document.createElement('button'), st = e && e.clean === true ? 'ok' : (e && e.clean === false ? 'no' : '');
+      if (st === 'ok') ok++; else if (st === 'no') bad++;
+      el.className = (st + (i === curIdx ? ' cur' : '')).trim();
+      el.textContent = String(i + 1);
+      el.title = 'Line ' + (i + 1) + (st === 'ok' ? ' completed' : st === 'no' ? ' completed with mistakes' : ' not yet completed');
+      el.type = 'button'; el.setAttribute('aria-label', el.title);
+      el.addEventListener('click', function () { jumpTo(l); });
+      grid.appendChild(el);
+    });
+    setText('lineLabel', curIdx >= 0 ? 'Line ' + (curIdx + 1) + ' of ' + cur.lines.length : cur.lines.length + ' line' + (cur.lines.length === 1 ? '' : 's'));
+    setText('vcCount', (ok + bad) + ' / ' + cur.lines.length + ' completed' + (bad ? ', ' + bad + ' with mistakes' : ''));
+    $('bPrev').disabled = !L || S.qi === 0; $('bSkip').disabled = !L;
+  }
+  function render() {
+    renderInner();
+    animateStep();
+    drawNav();
+    var a = $('bLichess'), L = S.line;
+    $('bRestart').style.display = L ? '' : 'none';
+    if (L && S.k <= L.plies.length) {
+      a.href = 'https://lichess.org/analysis/' + L.fens[S.k].replace(/ /g, '_') + '?color=' + (myColor(L) === 'b' ? 'black' : 'white');
+      a.style.display = 'inline-flex';
+    } else { a.style.display = 'none'; }
+  }
+  function animateStep() {
+    var L = S.line, k = S.k, same = !!L && S.lastLine === L, dk = same ? k - S.lastK : 0;
+    S.lastLine = L; S.lastK = k;
+    if (!L || Math.abs(dk) !== 1) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var ply = L.plies[dk === 1 ? k - 1 : k], flip = bottomIsBlack(L), moves = [[ply.from, ply.to]];
+    if (/^O-O/.test(ply.san)) {
+      var rk = ply.color === 'w' ? '1' : '8', long = /^O-O-O/.test(ply.san);
+      moves.push(long ? ['a' + rk, 'd' + rk] : ['h' + rk, 'f' + rk]);
+    }
+    moves.forEach(function (m) {
+      var from = dk === 1 ? m[0] : m[1], to = dk === 1 ? m[1] : m[0];
+      var el = $('board').querySelector('use[data-sq="' + to + '"]');
+      if (!el || !el.animate) return;
+      var a = center(from, flip), b = center(to, flip);
+      el.parentNode.appendChild(el);
+      el.animate([{ transform: 'translate(' + (a[0] - b[0]) + 'px,' + (a[1] - b[1]) + 'px)' }, { transform: 'translate(0px,0px)' }], { duration: 280, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' });
+    });
+  }
 
-                /* ---------- drill flow ---------- */
-                function shuffle(a) {
-                    for (var i = a.length - 1; i > 0; i--) {
-                        var j = Math.floor(Math.random() * (i + 1));
-                        var t = a[i];
-                        a[i] = a[j];
-                        a[j] = t;
-                    }
-                    return a;
-                }
-                function learnedCounts() {
-                    var p = getProg(),
-                        total = 0,
-                        ok = 0,
-                        bad = 0;
-                    S.chapters.forEach(function (c) {
-                        c.lines.forEach(function (l) {
-                            total++;
-                            var e = p[l.key];
-                            if (e && e.clean === true) ok++;
-                            else if (e && e.clean === false) bad++;
-                        });
-                    });
-                    return { ok: ok, total: total, bad: bad };
-                }
-                function updateMissedCount() {
-                    var c = learnedCounts();
-                    setText(
-                        'overall',
-                        c.total
-                            ? c.ok +
-                                  c.bad +
-                                  ' of ' +
-                                  c.total +
-                                  ' lines completed this session' +
-                                  (c.bad
-                                      ? ', ' + c.bad + ' with mistakes'
-                                      : '') +
-                                  '.'
-                            : '',
-                    );
-                }
-                function enterLine(qi, startK, takeBack) {
-                    S.qi = qi;
-                    S.line = S.queue[qi];
-                    S.k = startK;
-                    S.startK = startK;
-                    S.takeBack = takeBack;
-                    S.rev = false;
-                    S.wrongLine = 0;
-                    S.flipOverride = null;
-                    S.peek = false;
-                    S.missPlies = {};
-                    S.endFor = null;
-                    render();
-                }
-                function start() {
-                    var q = selectedLines();
-                    if ($('shuffle').checked) q = shuffle(q.slice());
-                    if (!q.length) {
-                        S.line = null;
-                        render();
-                        setText(
-                            'detail',
-                            'No lines match these settings. Try All lines or pick more chapters.',
-                        );
-                        return;
-                    }
-                    S.queue = q;
-                    S.finished = false;
-                    S.right = 0;
-                    S.wrong = 0;
-                    S.done = 0;
-                    enterLine(0, 0, 0);
-                    $('setup').open = false;
-                }
-                function lineComplete() {
-                    S.done++;
-                    setProg(S.line.key, S.wrongLine === 0);
-                    renderChapters();
-                    updateMissedCount();
-                }
-                function jumpTo(l) {
-                    if (!S.line) {
-                        start();
-                        if (!S.queue.length) return;
-                    }
-                    var i = S.queue.indexOf(l);
-                    if (i < 0) return;
-                    clearTimeout(S.timer);
-                    S.finished = false;
-                    enterLine(i, 0, 0);
-                }
-                function prevLine() {
-                    if (S.line && S.qi > 0) {
-                        clearTimeout(S.timer);
-                        enterLine(S.qi - 1, 0, 0);
-                    }
-                }
-                function nextLine() {
-                    var cur = S.line,
-                        prevK = Math.min(S.k, cur.plies.length);
-                    if (S.qi + 1 >= S.queue.length) {
-                        S.line = null;
-                        S.finished = true;
-                        render();
-                        return;
-                    }
-                    var nxt = S.queue[S.qi + 1],
-                        startK = 0;
-                    if ($('backup').checked && nxt.startFen === cur.startFen) {
-                        startK = Math.max(
-                            0,
-                            Math.min(
-                                W.commonPrefix(cur, nxt),
-                                prevK,
-                                nxt.plies.length - 1,
-                            ),
-                        );
-                    }
-                    enterLine(S.qi + 1, startK, prevK - startK);
-                }
-                function advance() {
-                    var L = S.line;
-                    if (!L) {
-                        if (S.finished) {
-                            S.finished = false;
-                        }
-                        start();
-                        return;
-                    }
-                    var n = L.plies.length;
-                    if (S.k >= n) {
-                        if (Date.now() - (S.endAt || 0) < 900) return;
-                        nextLine();
-                        return;
-                    }
-                    if (isMine(L, S.k) && !S.rev && $('autoMine').checked) {
-                        S.peek = true;
-                        S.k++;
-                        if (S.k >= n) lineComplete();
-                        render();
-                        return;
-                    }
-                    if (isMine(L, S.k) && !S.rev) {
-                        S.rev = true;
-                        render();
-                        return;
-                    }
-                    if (isMine(L, S.k)) S.right++;
-                    S.k++;
-                    S.rev = false;
-                    if (S.k >= n) lineComplete();
-                    render();
-                }
-                function markWrong() {
-                    var L = S.line;
-                    if (
-                        !L ||
-                        S.k >= L.plies.length ||
-                        !isMine(L, S.k) ||
-                        !S.rev
-                    )
-                        return;
-                    S.wrong++;
-                    S.wrongLine++;
-                    S.missPlies[S.k] = true;
-                    S.k++;
-                    S.rev = false;
-                    if (S.k >= L.plies.length) lineComplete();
-                    render();
-                }
-                function back() {
-                    var L = S.line;
-                    if (!L) return;
-                    if (S.rev) {
-                        S.rev = false;
-                        render();
-                        return;
-                    }
-                    if (S.k > 0) {
-                        S.endFor = null;
-                        S.k--;
-                        S.rev = S.k < L.plies.length && isMine(L, S.k);
-                        render();
-                    }
-                }
+  /* ---------- drill flow ---------- */
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function learnedCounts() {
+    var p = getProg(), total = 0, ok = 0, bad = 0;
+    S.chapters.forEach(function (c) { c.lines.forEach(function (l) {
+      total++; var e = p[l.key]; if (e && e.clean === true) ok++; else if (e && e.clean === false) bad++;
+    }); });
+    return { ok: ok, total: total, bad: bad };
+  }
+  function updateMissedCount() {
+    var c = learnedCounts();
+    setText('overall', c.total ? (c.ok + c.bad) + ' of ' + c.total + ' lines completed this session' + (c.bad ? ', ' + c.bad + ' with mistakes' : '') + '.' : '');
+  }
+  function enterLine(qi, startK, takeBack) {
+    S.qi = qi; S.line = S.queue[qi]; S.k = startK; S.startK = startK; S.takeBack = takeBack;
+    S.rev = false; S.wrongLine = 0; S.flipOverride = null; S.peek = false; S.missPlies = {}; S.endFor = null;
+    render();
+  }
+  function start() {
+    var q = selectedLines();
+    if ($('shuffle').checked) q = shuffle(q.slice());
+    if (!q.length) { S.line = null; render(); setText('detail', 'No lines match these settings. Try All lines or pick more chapters.'); return; }
+    S.queue = q; S.finished = false; S.right = 0; S.wrong = 0; S.done = 0;
+    enterLine(0, 0, 0);
+    $('setup').open = false;
+  }
+  function lineComplete() {
+    S.done++;
+    setProg(S.line.key, S.wrongLine === 0);
+    renderChapters(); updateMissedCount();
+  }
+  function jumpTo(l) {
+    if (!S.line) { start(); if (!S.queue.length) return; }
+    var i = S.queue.indexOf(l);
+    if (i < 0) return;
+    clearTimeout(S.timer); S.finished = false; enterLine(i, 0, 0);
+  }
+  function prevLine() { if (S.line && S.qi > 0) { clearTimeout(S.timer); enterLine(S.qi - 1, 0, 0); } }
+  function nextLine() {
+    var cur = S.line, prevK = Math.min(S.k, cur.plies.length);
+    if (S.qi + 1 >= S.queue.length) { S.line = null; S.finished = true; render(); return; }
+    var nxt = S.queue[S.qi + 1], startK = 0;
+    if ($('backup').checked && nxt.startFen === cur.startFen) {
+      startK = Math.max(0, Math.min(W.commonPrefix(cur, nxt), prevK, nxt.plies.length - 1));
+    }
+    enterLine(S.qi + 1, startK, prevK - startK);
+  }
+  function advance() {
+    var L = S.line;
+    if (!L) { if (S.finished) { S.finished = false; } start(); return; }
+    var n = L.plies.length;
+    if (S.k >= n) { if (Date.now() - (S.endAt || 0) < 900) return; nextLine(); return; }
+    if (isMine(L, S.k) && !S.rev && $('autoMine').checked) { S.peek = true; S.k++; if (S.k >= n) lineComplete(); render(); return; }
+    if (isMine(L, S.k) && !S.rev) { S.rev = true; render(); return; }
+    if (isMine(L, S.k)) S.right++;
+    S.k++; S.rev = false;
+    if (S.k >= n) lineComplete();
+    render();
+  }
+  function markWrong() {
+    var L = S.line;
+    if (!L || S.k >= L.plies.length || !isMine(L, S.k) || !S.rev) return;
+    S.wrong++; S.wrongLine++; S.missPlies[S.k] = true;
+    S.k++; S.rev = false;
+    if (S.k >= L.plies.length) lineComplete();
+    render();
+  }
+  function back() {
+    var L = S.line;
+    if (!L) return;
+    if (S.rev) { S.rev = false; render(); return; }
+    if (S.k > 0) {
+      S.endFor = null; S.k--;
+      S.rev = S.k < L.plies.length && isMine(L, S.k);
+      render();
+    }
+  }
 
-                /* ---------- loading ---------- */
-                function renderChapters() {
-                    var box = $('chapters');
-                    box.innerHTML = '';
-                    var prog = getProg();
-                    S.chapters.forEach(function (c) {
-                        var lab = document.createElement('label');
-                        lab.className = 'chap';
-                        var cb = document.createElement('input');
-                        cb.type = 'checkbox';
-                        cb.checked = !!S.selected[c.index];
-                        cb.addEventListener('change', function () {
-                            S.selected[c.index] = cb.checked;
-                            S.line = null;
-                            S.finished = false;
-                            updateMissedCount();
-                            render();
-                        });
-                        var t = document.createElement('span');
-                        t.className = 't';
-                        t.textContent = c.title;
-                        var cnt = document.createElement('span');
-                        cnt.className = 'n';
-                        cnt.textContent =
-                            c.lines.length +
-                            (c.lines.length === 1 ? ' line' : ' lines');
-                        var ok = 0,
-                            bad = 0,
-                            n = c.lines.length;
-                        c.lines.forEach(function (l) {
-                            var e = prog[l.key];
-                            if (e && e.clean === true) ok++;
-                            else if (e && e.clean === false) bad++;
-                        });
-                        cnt.textContent = '';
-                        var bb = document.createElement('b');
-                        bb.textContent = ok + bad;
-                        cnt.appendChild(bb);
-                        cnt.appendChild(
-                            document.createTextNode(
-                                ' / ' +
-                                    n +
-                                    ' completed' +
-                                    (bad ? ', ' + bad + ' with mistakes' : ''),
-                            ),
-                        );
-                        var pb = document.createElement('span');
-                        pb.className = 'pb';
-                        pb.innerHTML =
-                            '<i class="ok" style="width:' +
-                            (ok / n) * 100 +
-                            '%"></i><i class="no" style="width:' +
-                            (bad / n) * 100 +
-                            '%"></i>';
-                        lab.appendChild(cb);
-                        lab.appendChild(t);
-                        lab.appendChild(cnt);
-                        lab.appendChild(pb);
-                        box.appendChild(lab);
-                    });
-                    var wl = $('warnings');
-                    wl.innerHTML = '';
-                    S.chapters.forEach(function (c) {
-                        c.warnings.slice(0, 5).forEach(function (w) {
-                            var li = document.createElement('li');
-                            li.textContent = c.title + ': ' + w;
-                            wl.appendChild(li);
-                        });
-                    });
-                }
-                function loadText(text) {
-                    var msg = $('loadmsg');
-                    msg.className = '';
-                    try {
-                        if (!window.Chess)
-                            throw new Error(
-                                'The chess library did not load. Check your connection and reload.',
-                            );
-                        var games = W.parsePGN(text);
-                        var chapters = W.buildChapters(
-                            games,
-                            window.Chess,
-                        ).filter(function (c) {
-                            return c.lines.length;
-                        });
-                        if (!chapters.length)
-                            throw new Error('No moves found in that PGN.');
-                        chapters.forEach(function (c, i) {
-                            c.index = i;
-                            c.lines.forEach(function (l) {
-                                l.chapter = i;
-                            });
-                        });
-                        S.chapters = chapters;
-                        S.selected = {};
-                        chapters.forEach(function (c) {
-                            S.selected[c.index] = true;
-                        });
-                        S.line = null;
-                        S.finished = false;
-                        var total = chapters.reduce(function (a, c) {
-                            return a + c.lines.length;
-                        }, 0);
-                        msg.textContent =
-                            'Loaded ' +
-                            total +
-                            ' line' +
-                            (total === 1 ? '' : 's') +
-                            ' from ' +
-                            chapters.length +
-                            ' chapter' +
-                            (chapters.length === 1 ? '' : 's') +
-                            '.';
-                        renderChapters();
-                        updateMissedCount();
-                        render();
-                        return true;
-                    } catch (e) {
-                        msg.className = 'err';
-                        msg.textContent = e.message || String(e);
-                    }
-                    return false;
-                }
+  /* ---------- loading ---------- */
+  function renderChapters() {
+    var box = $('chapters'); box.innerHTML = ''; var prog = getProg();
+    S.chapters.forEach(function (c) {
+      var lab = document.createElement('label'); lab.className = 'chap';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!S.selected[c.index];
+      cb.addEventListener('change', function () { S.selected[c.index] = cb.checked; S.line = null; S.finished = false; updateMissedCount(); render(); });
+      var t = document.createElement('span'); t.className = 't'; t.textContent = c.title;
+      var cnt = document.createElement('span'); cnt.className = 'n'; cnt.textContent = c.lines.length + (c.lines.length === 1 ? ' line' : ' lines');
+      var ok = 0, bad = 0, n = c.lines.length;
+      c.lines.forEach(function (l) { var e = prog[l.key]; if (e && e.clean === true) ok++; else if (e && e.clean === false) bad++; });
+      cnt.textContent = '';
+      var bb = document.createElement('b'); bb.textContent = ok + bad; cnt.appendChild(bb);
+      cnt.appendChild(document.createTextNode(' / ' + n + ' completed' + (bad ? ', ' + bad + ' with mistakes' : '')));
+      var pb = document.createElement('span'); pb.className = 'pb';
+      pb.innerHTML = '<i class="ok" style="width:' + (ok / n * 100) + '%"></i><i class="no" style="width:' + (bad / n * 100) + '%"></i>';
+      lab.appendChild(cb); lab.appendChild(t); lab.appendChild(cnt); lab.appendChild(pb); box.appendChild(lab);
+    });
+    var wl = $('warnings'); wl.innerHTML = '';
+    S.chapters.forEach(function (c) {
+      c.warnings.slice(0, 5).forEach(function (w) { var li = document.createElement('li'); li.textContent = c.title + ': ' + w; wl.appendChild(li); });
+    });
+  }
+  function loadText(text) {
+    var msg = $('loadmsg');
+    msg.className = '';
+    try {
+      if (!window.Chess) throw new Error('The chess library did not load. Check your connection and reload.');
+      var games = W.parsePGN(text);
+      var chapters = W.buildChapters(games, window.Chess).filter(function (c) { return c.lines.length; });
+      if (!chapters.length) throw new Error('No moves found in that PGN.');
+      chapters.forEach(function (c, i) { c.index = i; c.lines.forEach(function (l) { l.chapter = i; }); });
+      S.chapters = chapters; S.selected = {}; chapters.forEach(function (c) { S.selected[c.index] = true; });
+      S.line = null; S.finished = false;
+      var total = chapters.reduce(function (a, c) { return a + c.lines.length; }, 0);
+      msg.textContent = 'Loaded ' + total + ' line' + (total === 1 ? '' : 's') + ' from ' + chapters.length + ' chapter' + (chapters.length === 1 ? '' : 's') + '.';
+      renderChapters(); updateMissedCount(); render();
+      return true;
+    } catch (e) {
+      msg.className = 'err'; msg.textContent = e.message || String(e);
+    }
+    return false;
+  }
 
-                /* ---------- events ---------- */
-                $('bNext').addEventListener('click', advance);
-                $('bWrong').addEventListener('click', markWrong);
-                $('bBack').addEventListener('click', back);
-                $('bPrev').addEventListener('click', prevLine);
-                $('bRestart').addEventListener('click', function () {
-                    start();
-                    $('setup').open = false;
-                });
-                $('jumpChap').addEventListener('change', function () {
-                    var ch = S.chapters[parseInt($('jumpChap').value, 10)];
-                    $('jumpChap').blur();
-                    if (ch && ch.lines.length) jumpTo(ch.lines[0]);
-                });
-                function stepChapter(d) {
-                    var chs = navChapters(),
-                        cur = S.line ? S.chapters[S.line.chapter] : chs[0],
-                        t = chs[chs.indexOf(cur) + d];
-                    if (t && t.lines.length) jumpTo(t.lines[0]);
-                }
-                $('chPrev').addEventListener('click', function () {
-                    stepChapter(-1);
-                });
-                $('chNext').addEventListener('click', function () {
-                    stepChapter(1);
-                });
-                document.addEventListener('click', function (e) {
-                    var b = e.target.closest && e.target.closest('button');
-                    if (b && e.detail > 0) b.blur();
-                });
-                var resetTimer = null;
-                $('bReset').addEventListener('click', function () {
-                    var b = $('bReset');
-                    if (b.dataset.armed !== '1') {
-                        b.dataset.armed = '1';
-                        b.textContent =
-                            'Sure? Click again to clear this session';
-                        resetTimer = setTimeout(function () {
-                            b.dataset.armed = '';
-                            b.textContent = 'Reset progress for this session';
-                        }, 4000);
-                        return;
-                    }
-                    clearTimeout(resetTimer);
-                    b.dataset.armed = '';
-                    b.textContent = 'Reset progress for this session';
-                    S.prog = {};
-                    clearTimeout(S.timer);
-                    S.line = null;
-                    S.finished = false;
-                    S.queue = [];
-                    S.right = 0;
-                    S.wrong = 0;
-                    S.done = 0;
-                    renderChapters();
-                    updateMissedCount();
-                    render();
-                    setText(
-                        'detail',
-                        'Session progress cleared. Start begins again at line 1.',
-                    );
-                });
-                $('bSkip').addEventListener('click', function () {
-                    if (S.line) {
-                        S.k = S.line.plies.length;
-                        nextLine();
-                    }
-                });
-                $('bFlip').addEventListener('click', function () {
-                    S.flipOverride = !S.flipOverride;
-                    render();
-                });
-                $('bStart').addEventListener('click', start);
-                $('bLoad').addEventListener('click', function () {
-                    var text = $('pgn').value,
-                        name = $('studyName').value.trim();
-                    if (!loadText(text)) return;
-                    var msg = $('loadmsg');
-                    if (!name) {
-                        msg.className = 'err';
-                        msg.textContent =
-                            'Loaded, but not saved. Give the study a name first.';
-                        return;
-                    }
-                    var all = getStudies();
-                    all[name] = { pgn: text, updated: Date.now() };
-                    putStudies(all);
-                    store('rld.active', name);
-                    refreshStudySel(name);
-                    msg.textContent += ' Saved as "' + name + '".';
-                });
-                function refreshStudySel(active) {
-                    var all = getStudies(),
-                        names = Object.keys(all).sort(),
-                        sel = $('studySel');
-                    sel.innerHTML = '';
-                    if (!names.length) {
-                        var o = document.createElement('option');
-                        o.value = '';
-                        o.textContent = 'No saved studies yet';
-                        sel.appendChild(o);
-                    }
-                    names.forEach(function (n) {
-                        var o = document.createElement('option');
-                        o.value = n;
-                        o.textContent = n;
-                        sel.appendChild(o);
-                    });
-                    if (active && all[active]) sel.value = active;
-                }
-                function openStudy(name) {
-                    var all = getStudies(),
-                        s = all[name];
-                    if (!s) {
-                        S.chapters = [];
-                        S.selected = {};
-                        S.line = null;
-                        S.finished = false;
-                        $('pgn').value = '';
-                        $('studyName').value = '';
-                        renderChapters();
-                        updateMissedCount();
-                        render();
-                        return;
-                    }
-                    $('pgn').value = s.pgn;
-                    $('studyName').value = name;
-                    store('rld.active', name);
-                    loadText(s.pgn);
-                }
-                $('studySel').addEventListener('change', function () {
-                    openStudy($('studySel').value);
-                });
-                var delTimer = null;
-                $('bDelStudy').addEventListener('click', function () {
-                    var b = $('bDelStudy'),
-                        name = $('studySel').value;
-                    if (!name) return;
-                    if (b.dataset.armed !== '1') {
-                        b.dataset.armed = '1';
-                        b.textContent = 'Sure? Click again';
-                        delTimer = setTimeout(function () {
-                            b.dataset.armed = '';
-                            b.textContent = 'Delete';
-                        }, 3500);
-                        return;
-                    }
-                    clearTimeout(delTimer);
-                    b.dataset.armed = '';
-                    b.textContent = 'Delete';
-                    var all = getStudies();
-                    delete all[name];
-                    putStudies(all);
-                    refreshStudySel();
-                    openStudy($('studySel').value);
-                });
-                $('bAll').addEventListener('click', function () {
-                    S.chapters.forEach(function (c) {
-                        S.selected[c.index] = true;
-                    });
-                    S.line = null;
-                    renderChapters();
-                    updateMissedCount();
-                    render();
-                });
-                $('bNone').addEventListener('click', function () {
-                    S.selected = {};
-                    S.line = null;
-                    renderChapters();
-                    updateMissedCount();
-                    render();
-                });
-                $('autoMine').addEventListener('change', function () {
-                    $('delayRow').style.opacity = $('autoMine').checked
-                        ? '1'
-                        : '0.5';
-                });
-                $('autoDelay').addEventListener('change', render);
-                $('autoMine').addEventListener('change', render);
-                $('delayRow').style.opacity = $('autoMine').checked
-                    ? '1'
-                    : '0.5';
-                $('file').addEventListener('change', function (e) {
-                    var f = e.target.files && e.target.files[0];
-                    if (!f) return;
-                    var r = new FileReader();
-                    r.onload = function () {
-                        $('pgn').value = String(r.result);
-                        if (!$('studyName').value)
-                            $('studyName').value = f.name.replace(
-                                /\.[^.]+$/,
-                                '',
-                            );
-                        loadText(String(r.result));
-                    };
-                    r.readAsText(f);
-                });
-                document.addEventListener('keydown', function (e) {
-                    var tag = (e.target && e.target.tagName) || '';
-                    if (
-                        /^(TEXTAREA|INPUT|SELECT)$/.test(tag) ||
-                        e.ctrlKey ||
-                        e.metaKey ||
-                        e.altKey
-                    )
-                        return;
-                    var k = e.key;
-                    if (k === ' ' || k === 'ArrowRight') {
-                        e.preventDefault();
-                        if (!(tag === 'BUTTON' && k === ' ')) advance();
-                    } else if (k === 'ArrowLeft') {
-                        e.preventDefault();
-                        back();
-                    } else if (k === 'x' || k === 'X') markWrong();
-                    else if (k === 'f' || k === 'F') {
-                        S.flipOverride = !S.flipOverride;
-                        render();
-                    } else if (k === 'p' || k === 'P') prevLine();
-                    else if (k === 'r' || k === 'R') {
-                        if (S.line) {
-                            start();
-                            $('setup').open = false;
-                        }
-                    } else if (k === 'n' || k === 'N') {
-                        if (S.line) {
-                            S.k = S.line.plies.length;
-                            nextLine();
-                        }
-                    }
-                });
+  /* ---------- events ---------- */
+  $('bNext').addEventListener('click', advance);
+  $('bWrong').addEventListener('click', markWrong);
+  $('bBack').addEventListener('click', back);
+  $('bPrev').addEventListener('click', prevLine);
+  $('bRestart').addEventListener('click', function () { start(); $('setup').open = false; });
+  $('jumpChap').addEventListener('change', function () {
+    var ch = S.chapters[parseInt($('jumpChap').value, 10)];
+    $('jumpChap').blur(); if (ch && ch.lines.length) jumpTo(ch.lines[0]);
+  });
+  function stepChapter(d) {
+    var chs = navChapters(), cur = S.line ? S.chapters[S.line.chapter] : chs[0], t = chs[chs.indexOf(cur) + d];
+    if (t && t.lines.length) jumpTo(t.lines[0]);
+  }
+  $('chPrev').addEventListener('click', function () { stepChapter(-1); });
+  $('chNext').addEventListener('click', function () { stepChapter(1); });
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('button'); if (b && e.detail > 0) b.blur(); });
+  var resetTimer = null;
+  $('bReset').addEventListener('click', function () {
+    var b = $('bReset');
+    if (b.dataset.armed !== '1') {
+      b.dataset.armed = '1'; b.textContent = 'Sure? Click again to clear this session';
+      resetTimer = setTimeout(function () { b.dataset.armed = ''; b.textContent = 'Reset progress for this session'; }, 4000);
+      return;
+    }
+    clearTimeout(resetTimer); b.dataset.armed = ''; b.textContent = 'Reset progress for this session';
+    S.prog = {};
+    clearTimeout(S.timer); S.line = null; S.finished = false; S.queue = []; S.right = 0; S.wrong = 0; S.done = 0;
+    renderChapters(); updateMissedCount(); render();
+    setText('detail', 'Session progress cleared. Start begins again at line 1.');
+  });
+  $('bSkip').addEventListener('click', function () { if (S.line) { S.k = S.line.plies.length; nextLine(); } });
+  $('bFlip').addEventListener('click', function () { S.flipOverride = !S.flipOverride; render(); });
+  $('bStart').addEventListener('click', start);
+    $('bLoad').addEventListener('click', function () {
+    var text = $('pgn').value, name = $('studyName').value.trim();
+    if (!loadText(text)) return;
+    var msg = $('loadmsg');
+    if (!name) { msg.className = 'err'; msg.textContent = 'Loaded, but not saved. Give the study a name first.'; return; }
+    var all = getStudies(), srcId = parseStudyId($('studyUrl').value);
+    all[name] = { url: srcId ? 'https://lichess.org/study/' + srcId : ((all[name] && all[name].url) || ''), pgn: text, updated: Date.now() };
+    putStudies(all); store('rld.active', name); refreshStudySel(name); updateRefresh();
+    msg.textContent += ' Saved as "' + name + '".';
+  });
+  function parseStudyId(s) {
+    s = String(s || '').trim();
+    var m = /lichess\.org\/study\/([A-Za-z0-9]{8})/.exec(s) || /^([A-Za-z0-9]{8})$/.exec(s);
+    return m ? m[1] : '';
+  }
+  function fetchStudy(id) {
+    var token = ($('lichessToken').value || '').trim();
+    var url = 'https://lichess.org/api/study/' + id + '.pgn?orientation=true&comments=true&variations=true&clocks=false';
+    return fetch(url, token ? { headers: { Authorization: 'Bearer ' + token } } : {}).then(function (res) {
+      if (res.ok) return res.text();
+      var why = res.status === 404 ? 'Study not found. If it is private, add a token under "Private study?".'
+        : (res.status === 401 || res.status === 403) ? 'Lichess refused the token. It needs the study:read permission.'
+        : res.status === 429 ? 'Lichess is rate limiting requests. Wait a minute and try again.'
+        : 'Lichess returned an error (' + res.status + ').';
+      var err = new Error(why); err.known = true; throw err;
+    });
+  }
+  function importStudy(input, nameHint) {
+    var id = parseStudyId(input), msg = $('loadmsg');
+    msg.className = '';
+    if (!id) { msg.className = 'err'; msg.textContent = 'That does not look like a Lichess study link. It should look like https://lichess.org/study/xxxxxxxx'; return Promise.resolve(false); }
+    msg.textContent = 'Fetching from Lichess...';
+    return fetchStudy(id).then(function (text) {
+      var m = /\[StudyName "([^"]+)"\]/.exec(text);
+      var name = nameHint || $('studyName').value.trim() || (m ? m[1] : id);
+      $('pgn').value = text; $('studyName').value = name;
+      if (!loadText(text)) return false;
+      var all = getStudies(); all[name] = { url: 'https://lichess.org/study/' + id, pgn: text, updated: Date.now() }; putStudies(all);
+      store('rld.active', name); refreshStudySel(name); updateRefresh();
+      $('loadmsg').textContent += ' Imported "' + name + '" from Lichess and saved.';
+      return true;
+    }).catch(function (e) {
+      msg.className = 'err';
+      msg.textContent = e && e.known ? e.message : 'Could not reach Lichess. Check your connection. Pages that block outside requests, such as the claude.ai preview, cannot import, so paste the PGN instead.';
+      return false;
+    });
+  }
+  function updateRefresh() {
+    var s = getStudies()[$('studySel').value];
+    $('bRefresh').style.display = s && s.url ? '' : 'none';
+  }
+  $('bImport').addEventListener('click', function () { importStudy($('studyUrl').value, ''); });
+  $('studyUrl').addEventListener('keydown', function (e) { if (e.key === 'Enter') importStudy($('studyUrl').value, ''); });
+  $('bRefresh').addEventListener('click', function () {
+    var name = $('studySel').value, s = getStudies()[name];
+    if (s && s.url) importStudy(s.url, name);
+  });
+  $('lichessToken').addEventListener('input', function () { store('rld.token', $('lichessToken').value.trim()); });
+  function refreshStudySel(active) {
+    var all = getStudies(), names = Object.keys(all).sort(), sel = $('studySel');
+    sel.innerHTML = '';
+    if (!names.length) { var o = document.createElement('option'); o.value = ''; o.textContent = 'No saved studies yet'; sel.appendChild(o); }
+    names.forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+    if (active && all[active]) sel.value = active;
+  }
+  function openStudy(name) {
+    var all = getStudies(), s = all[name];
+    updateRefresh();
+    if (!s) { S.chapters = []; S.selected = {}; S.line = null; S.finished = false; $('pgn').value = ''; $('studyName').value = ''; renderChapters(); updateMissedCount(); render(); return; }
+    $('pgn').value = s.pgn; $('studyName').value = name; $('studyUrl').value = s.url || '';
+    store('rld.active', name); loadText(s.pgn);
+  }
+  $('studySel').addEventListener('change', function () { openStudy($('studySel').value); });
+  var delTimer = null;
+  $('bDelStudy').addEventListener('click', function () {
+    var b = $('bDelStudy'), name = $('studySel').value;
+    if (!name) return;
+    if (b.dataset.armed !== '1') {
+      b.dataset.armed = '1'; b.textContent = 'Sure? Click again';
+      delTimer = setTimeout(function () { b.dataset.armed = ''; b.textContent = 'Delete'; }, 3500);
+      return;
+    }
+    clearTimeout(delTimer); b.dataset.armed = ''; b.textContent = 'Delete';
+    var all = getStudies(); delete all[name]; putStudies(all);
+    refreshStudySel(); openStudy($('studySel').value);
+  });
+  $('bAll').addEventListener('click', function () { S.chapters.forEach(function (c) { S.selected[c.index] = true; }); S.line = null; renderChapters(); updateMissedCount(); render(); });
+  $('bNone').addEventListener('click', function () { S.selected = {}; S.line = null; renderChapters(); updateMissedCount(); render(); });
+  $('autoMine').addEventListener('change', function () { $('delayRow').style.opacity = $('autoMine').checked ? '1' : '0.5'; });
+  $('autoDelay').addEventListener('change', render);
+  $('autoMine').addEventListener('change', render);
+  $('delayRow').style.opacity = $('autoMine').checked ? '1' : '0.5';
+  $('file').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { $('pgn').value = String(r.result); if (!$('studyName').value) $('studyName').value = f.name.replace(/\.[^.]+$/, ''); loadText(String(r.result)); };
+    r.readAsText(f);
+  });
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (/^(TEXTAREA|INPUT|SELECT)$/.test(tag) || e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === ' ' || k === 'ArrowRight') { e.preventDefault(); if (!(tag === 'BUTTON' && k === ' ')) advance(); }
+    else if (k === 'ArrowLeft') { e.preventDefault(); back(); }
+    else if (k === 'x' || k === 'X') markWrong();
+    else if (k === 'f' || k === 'F') { S.flipOverride = !S.flipOverride; render(); }
+    else if (k === 'p' || k === 'P') prevLine();
+    else if (k === 'r' || k === 'R') { if (S.line) { start(); $('setup').open = false; } }
+    else if (k === 'n' || k === 'N') { if (S.line) { S.k = S.line.plies.length; nextLine(); } }
+  });
 
-                var legacy = store('rld.pgn');
-                if (
-                    legacy &&
-                    legacy.length > 10 &&
-                    !Object.keys(getStudies()).length
-                ) {
-                    var mig = {};
-                    mig['My repertoire'] = {
-                        url: '',
-                        pgn: legacy,
-                        updated: Date.now(),
-                    };
-                    putStudies(mig);
-                    store('rld.active', 'My repertoire');
-                }
-                var act = store('rld.active');
-                refreshStudySel(act);
-                openStudy($('studySel').value);
-                if (!Object.keys(getStudies()).length) $('addBox').open = true;
-            })();
-        </script>
-    </body>
+  $('lichessToken').value = store('rld.token') || '';
+  var legacy = store('rld.pgn');
+  if (legacy && legacy.length > 10 && !Object.keys(getStudies()).length) {
+    var mig = {}; mig['My repertoire'] = { url: '', pgn: legacy, updated: Date.now() }; putStudies(mig); store('rld.active', 'My repertoire');
+  }
+  var act = store('rld.active');
+  refreshStudySel(act);
+  openStudy($('studySel').value);
+  if (!Object.keys(getStudies()).length) $('addBox').open = true;
+})();
+</script>
+</body>
 </html>

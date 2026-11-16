@@ -4,7 +4,7 @@ A small static web app for drilling a chess opening repertoire over the board.
 
 Whoever sits at the screen plays the opponent: the screen shows each opponent move as an arrow, they make it on the real board, and you answer from memory. Load a Lichess study (all chapters in one PGN) and the app walks through every line of every chapter, tracks your progress for the session, and lets you jump to any chapter or line.
 
-Everything runs in the browser. There is no backend and no database. Saved studies are kept in the browser's `localStorage`; session progress lives in memory and resets on reload.
+Everything runs in the browser. There is no backend and no database; the only outside request is the optional import from Lichess. Saved studies are kept in the browser's `localStorage`; session progress lives in memory and resets on reload.
 
 ## Run locally
 
@@ -15,9 +15,14 @@ npm start            # serves http://localhost:8080 (needs python3)
 
 ## Use it
 
-1. Open **Studies and options** and then **Add or update a study**.
-2. In your Lichess study choose **Share & export**, then **Study PGN**. Copy the whole PGN, paste it in, name the study and press **Save study**.
+1. Open **Studies and options**, then **Add or update a study**.
+2. Paste a Lichess study link (for example `https://lichess.org/study/xxxxxxxx`) and press **Import**. Every chapter comes in at once, and the study is saved under its Lichess name.
 3. Tick the chapters you want and press **Start**.
+4. After you edit the study on Lichess, choose the study in the dropdown and press **Update from Lichess**. Your session progress carries over for lines that haven't changed.
+
+Import uses the Lichess API (`GET /api/study/{id}.pgn`) straight from the browser. It works for public and unlisted studies. For a private study, create a [personal access token](https://lichess.org/account/oauth/token) with the `study:read` permission and paste it under **Private study?**. The token is stored only in your browser's `localStorage`, so use a token with just that permission.
+
+If import fails (offline, or a browser or network that blocks it), open the study on Lichess, choose **Share & export**, then **Study PGN**, and paste the PGN into the box instead.
 
 `examples/` has starter PGNs you can load to try it.
 
